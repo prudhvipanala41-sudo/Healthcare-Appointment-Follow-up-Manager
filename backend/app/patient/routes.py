@@ -87,13 +87,29 @@ def book(doctor_id):
     except BookingError as e:
         return jsonify({"error": e.message}), e.status_code
 
+    import threading
+    def _generate_async(app, appt_id, text):
+        with app.app_context():
+            from app.models import Appointment
+            from app.extensions import db
+            from app.llm.service import generate_previsit_summary
+            import json
+            
+            summary, failed = generate_previsit_summary(text)
+            appt = Appointment.query.get(appt_id)
+            if appt:
+                appt.previsit_summary_json = json.dumps(summary)
+                appt.previsit_llm_failed = failed
+                db.session.commit()
+
     # Save symptoms and generate pre-visit summary if provided at booking time
     if symptoms:
         appointment.symptoms_text = symptoms
-        summary, failed = generate_previsit_summary(symptoms)
-        appointment.previsit_summary_json = json.dumps(summary)
-        appointment.previsit_llm_failed = failed
         db.session.commit()
+        
+        # Run LLM generation in background so the booking request returns instantly
+        app = current_app._get_current_object()
+        threading.Thread(target=_generate_async, args=(app, appointment.id, symptoms)).start()
 
     # Best-effort side effects — never let these fail the booking itself.
     try:
@@ -124,10 +140,25 @@ def submit_symptoms(appointment_id):
         return jsonify({"error": "symptoms text is required"}), 400
 
     appointment.symptoms_text = symptoms
-    summary, failed = generate_previsit_summary(symptoms)
-    appointment.previsit_summary_json = json.dumps(summary)
-    appointment.previsit_llm_failed = failed
     db.session.commit()
+    
+    import threading
+    def _generate_async_submit(app, appt_id, text):
+        with app.app_context():
+            from app.models import Appointment
+            from app.extensions import db
+            from app.llm.service import generate_previsit_summary
+            import json
+            
+            summary, failed = generate_previsit_summary(text)
+            appt = Appointment.query.get(appt_id)
+            if appt:
+                appt.previsit_summary_json = json.dumps(summary)
+                appt.previsit_llm_failed = failed
+                db.session.commit()
+
+    app = current_app._get_current_object()
+    threading.Thread(target=_generate_async_submit, args=(app, appointment.id, symptoms)).start()
     return jsonify(appointment.to_dict())
 
 
