@@ -1,0 +1,96 @@
+"""
+Google Calendar OAuth2 connect flow.
+
+Flow: frontend hits /api/calendar/connect (JWT-protected) which returns a
+Google consent URL. User approves on Google's site, Google redirects back to
+/api/calendar/oauth2callback with a `code` + our `state` (the user id). We
+exchange the code for tokens and store the refresh token on CalendarToken.
+Connecting Calendar is optional — everything else works without it.
+"""
+from flask import Blueprint, current_app, jsonify, redirect, request
+from flask_jwt_extended import get_jwt_identity, jwt_required
+from google_auth_oauthlib.flow import Flow
+
+from app.extensions import db
+from app.models import CalendarToken
+
+bp = Blueprint("calendar", __name__, url_prefix="/api/calendar")
+
+SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
+
+
+def _flow():
+    client_config = {
+        "web": {
+            "client_id": current_app.config["GOOGLE_CLIENT_ID"],
+            "client_secret": current_app.config["GOOGLE_CLIENT_SECRET"],
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "redirect_uris": [current_app.config["GOOGLE_REDIRECT_URI"]],
+        }
+    }
+    return Flow.from_client_config(client_config, scopes=SCOPES, redirect_uri=current_app.config["GOOGLE_REDIRECT_URI"])
+
+
+@bp.get("/connect")
+@jwt_required()
+def connect():
+    if not current_app.config["GOOGLE_CLIENT_ID"]:
+        return jsonify({"error": "Google Calendar is not configured on this server"}), 501
+    flow = _flow()
+    auth_url, _ = flow.authorization_url(
+        access_type="offline", include_granted_scopes="true", prompt="consent", state=get_jwt_identity()
+    )
+    return jsonify({"authorization_url": auth_url})
+
+
+@bp.get("/oauth2callback")
+def oauth2callback():
+    # Handle user denial or other errors from Google
+    error = request.args.get("error")
+    if error:
+        frontend_url = current_app.config["FRONTEND_URL"]
+        return redirect(f"{frontend_url}/?calendar_error={error}")
+
+    state = request.args.get("state")
+    code = request.args.get("code")
+    if not state or not code:
+        return jsonify({"error": "missing state or code"}), 400
+
+    try:
+        flow = _flow()
+        flow.fetch_token(code=code)
+        creds = flow.credentials
+    except Exception as exc:
+        current_app.logger.error("OAuth2 token exchange failed: %s", exc)
+        return redirect(f"{current_app.config['FRONTEND_URL']}/?calendar_error=token_exchange_failed")
+
+    token = CalendarToken.query.filter_by(user_id=state).first()
+    if not token:
+        token = CalendarToken(user_id=state, refresh_token=creds.refresh_token)
+        db.session.add(token)
+    else:
+        token.refresh_token = creds.refresh_token or token.refresh_token
+    token.access_token = creds.token
+    token.token_expiry = creds.expiry
+    db.session.commit()
+
+    return redirect(f"{current_app.config['FRONTEND_URL']}/?calendar=connected")
+
+
+@bp.get("/status")
+@jwt_required()
+def status():
+    token = CalendarToken.query.filter_by(user_id=get_jwt_identity()).first()
+    return jsonify({"connected": token is not None})
+
+
+@bp.delete("/disconnect")
+@jwt_required()
+def disconnect():
+    """Revoke calendar access — removes the stored tokens."""
+    token = CalendarToken.query.filter_by(user_id=get_jwt_identity()).first()
+    if token:
+        db.session.delete(token)
+        db.session.commit()
+    return jsonify({"message": "Google Calendar disconnected."})

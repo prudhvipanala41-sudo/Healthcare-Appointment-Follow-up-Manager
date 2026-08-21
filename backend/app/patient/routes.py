@@ -1,0 +1,160 @@
+import json
+from datetime import date, datetime
+
+from flask import Blueprint, current_app, jsonify, request
+from flask_jwt_extended import get_jwt_identity
+
+from app.extensions import db
+from app.models import Appointment, AppointmentStatus, DoctorProfile, MedicationReminder
+from app.appointments.services import BookingError, book_appointment, cancel_appointment, generate_available_slots, hold_slot
+from app.llm.service import generate_previsit_summary
+from app.notifications.calendar_service import create_events, delete_events
+from app.notifications.email_service import send_booking_confirmation, send_cancellation
+from app.utils.security import roles_required
+
+bp = Blueprint("patient", __name__, url_prefix="/api/patient")
+
+
+@bp.get("/doctors")
+@roles_required("patient", "admin")
+def search_doctors():
+    specialisation = request.args.get("specialisation", "").strip()
+    q = DoctorProfile.query
+    if specialisation:
+        q = q.filter(DoctorProfile.specialisation.ilike(f"%{specialisation}%"))
+    return jsonify([d.to_dict() for d in q.all()])
+
+
+@bp.get("/doctors/<doctor_id>/slots")
+@roles_required("patient", "admin")
+def doctor_slots(doctor_id):
+    date_str = request.args.get("date")
+    if not date_str:
+        return jsonify({"error": "date query param (YYYY-MM-DD) is required"}), 400
+    try:
+        target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        return jsonify({"error": "date must be YYYY-MM-DD"}), 400
+
+    # Reject past dates
+    if target_date < date.today():
+        return jsonify({"date": date_str, "slots": [], "reason": "past_date"})
+
+    doctor = DoctorProfile.query.get_or_404(doctor_id)
+    return jsonify({"date": date_str, "slots": generate_available_slots(doctor, target_date)})
+
+
+@bp.post("/doctors/<doctor_id>/hold")
+@roles_required("patient")
+def hold(doctor_id):
+    data = request.get_json(force=True)
+    try:
+        target_date = datetime.strptime(data["date"], "%Y-%m-%d").date()
+    except (KeyError, ValueError):
+        return jsonify({"error": "date must be YYYY-MM-DD"}), 400
+
+    if target_date < date.today():
+        return jsonify({"error": "Cannot hold a slot in the past."}), 400
+
+    start_time = data.get("start_time")
+    if not start_time:
+        return jsonify({"error": "start_time is required"}), 400
+
+    patient_id = get_jwt_identity()
+    try:
+        hold_obj = hold_slot(doctor_id, target_date, start_time, patient_id, current_app.config["SLOT_HOLD_SECONDS"])
+    except BookingError as e:
+        return jsonify({"error": e.message}), e.status_code
+    return jsonify({"hold_id": hold_obj.id, "expires_at": hold_obj.expires_at.isoformat()}), 201
+
+
+@bp.post("/doctors/<doctor_id>/book")
+@roles_required("patient")
+def book(doctor_id):
+    data = request.get_json(force=True)
+    try:
+        target_date = datetime.strptime(data["date"], "%Y-%m-%d").date()
+    except (KeyError, ValueError):
+        return jsonify({"error": "date must be YYYY-MM-DD"}), 400
+
+    start_time = data.get("start_time")
+    symptoms = (data.get("symptoms") or "").strip()
+    patient_id = get_jwt_identity()
+    doctor = DoctorProfile.query.get_or_404(doctor_id)
+
+    try:
+        appointment = book_appointment(doctor, patient_id, target_date, start_time, data.get("hold_id"))
+    except BookingError as e:
+        return jsonify({"error": e.message}), e.status_code
+
+    # Save symptoms and generate pre-visit summary if provided at booking time
+    if symptoms:
+        appointment.symptoms_text = symptoms
+        summary, failed = generate_previsit_summary(symptoms)
+        appointment.previsit_summary_json = json.dumps(summary)
+        appointment.previsit_llm_failed = failed
+        db.session.commit()
+
+    # Best-effort side effects — never let these fail the booking itself.
+    try:
+        send_booking_confirmation(appointment)
+    except Exception:
+        current_app.logger.exception("booking confirmation email failed")
+    try:
+        create_events(appointment)
+    except Exception:
+        current_app.logger.exception("calendar event creation failed")
+
+    return jsonify(appointment.to_dict()), 201
+
+
+@bp.post("/appointments/<appointment_id>/symptoms")
+@roles_required("patient")
+def submit_symptoms(appointment_id):
+    appointment = Appointment.query.get_or_404(appointment_id)
+    if appointment.patient_id != get_jwt_identity():
+        return jsonify({"error": "forbidden"}), 403
+
+    # Prevent re-submission — only allow if symptoms not yet submitted
+    if appointment.symptoms_text:
+        return jsonify({"error": "Symptoms have already been submitted for this appointment."}), 409
+
+    symptoms = (request.get_json(force=True).get("symptoms") or "").strip()
+    if not symptoms:
+        return jsonify({"error": "symptoms text is required"}), 400
+
+    appointment.symptoms_text = symptoms
+    summary, failed = generate_previsit_summary(symptoms)
+    appointment.previsit_summary_json = json.dumps(summary)
+    appointment.previsit_llm_failed = failed
+    db.session.commit()
+    return jsonify(appointment.to_dict())
+
+
+@bp.get("/appointments")
+@roles_required("patient")
+def my_appointments():
+    patient_id = get_jwt_identity()
+    appts = Appointment.query.filter_by(patient_id=patient_id).order_by(Appointment.appointment_date.desc()).all()
+    return jsonify([a.to_dict() for a in appts])
+
+
+@bp.post("/appointments/<appointment_id>/cancel")
+@roles_required("patient")
+def cancel(appointment_id):
+    appointment = Appointment.query.get_or_404(appointment_id)
+    if appointment.patient_id != get_jwt_identity():
+        return jsonify({"error": "forbidden"}), 403
+    if appointment.status != AppointmentStatus.BOOKED:
+        return jsonify({"error": "appointment is not active"}), 400
+
+    cancel_appointment(appointment)
+    try:
+        delete_events(appointment)
+    except Exception:
+        current_app.logger.exception("calendar event deletion failed")
+    try:
+        send_cancellation(appointment, reason="cancelled by patient")
+    except Exception:
+        current_app.logger.exception("cancellation email failed")
+    return jsonify(appointment.to_dict())
