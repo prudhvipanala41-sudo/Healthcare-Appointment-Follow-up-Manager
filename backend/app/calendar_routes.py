@@ -125,24 +125,42 @@ def connect():
 
 @bp.get("/oauth2callback")
 def oauth2callback():
-    # Handle user denial or other errors from Google
     error = request.args.get("error")
     if error:
-        frontend_url = current_app.config["FRONTEND_URL"]
-        return redirect(f"{frontend_url}/?calendar_error={error}")
+        return f"""
+        <!DOCTYPE html>
+        <html><head><title>Calendar Connection Cancelled</title>
+        <style>body {{ font-family: sans-serif; background: #0a0f1e; color: #f87171; text-align: center; padding: 40px 20px; }}
+        button {{ margin-top: 20px; background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }}</style>
+        </head><body>
+        <h3>Connection Cancelled</h3>
+        <p>Google returned: {error}</p>
+        <button onclick="window.close()">Close Window</button>
+        </body></html>
+        """, 200, {"Content-Type": "text/html"}
 
     state = request.args.get("state")
     code = request.args.get("code")
     if not state or not code:
-        return jsonify({"error": "missing state or code"}), 400
+        return "<h3>Missing state or authorization code from Google</h3>", 400
 
     try:
         flow = _flow()
         flow.fetch_token(code=code)
         creds = flow.credentials
     except Exception as exc:
-        current_app.logger.error("OAuth2 token exchange failed: %s", exc)
-        return redirect(f"{current_app.config['FRONTEND_URL']}/?calendar_error=token_exchange_failed")
+        current_app.logger.exception("OAuth2 token exchange failed: %s", exc)
+        return f"""
+        <!DOCTYPE html>
+        <html><head><title>Connection Error</title>
+        <style>body {{ font-family: sans-serif; background: #0a0f1e; color: #f87171; text-align: center; padding: 40px 20px; }}
+        button {{ margin-top: 20px; background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }}</style>
+        </head><body>
+        <h3>Token Exchange Failed</h3>
+        <p style="font-size: 13px; color: #94a3b8;">{str(exc)}</p>
+        <button onclick="window.close()">Close Window</button>
+        </body></html>
+        """, 200, {"Content-Type": "text/html"}
 
     try:
         token = CalendarToken.query.filter_by(user_id=state).first()
@@ -159,7 +177,17 @@ def oauth2callback():
     except Exception as exc:
         current_app.logger.exception("Failed to save calendar token: %s", exc)
         db.session.rollback()
-        return redirect(f"{current_app.config['FRONTEND_URL']}/?calendar_error=save_failed")
+        return f"""
+        <!DOCTYPE html>
+        <html><head><title>Save Error</title>
+        <style>body {{ font-family: sans-serif; background: #0a0f1e; color: #f87171; text-align: center; padding: 40px 20px; }}
+        button {{ margin-top: 20px; background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }}</style>
+        </head><body>
+        <h3>Failed to Save Connection</h3>
+        <p style="font-size: 13px; color: #94a3b8;">{str(exc)}</p>
+        <button onclick="window.close()">Close Window</button>
+        </body></html>
+        """, 200, {"Content-Type": "text/html"}
 
     return """
     <!DOCTYPE html>
@@ -188,6 +216,7 @@ def oauth2callback():
     </body>
     </html>
     """, 200, {"Content-Type": "text/html"}
+
 
 
 
