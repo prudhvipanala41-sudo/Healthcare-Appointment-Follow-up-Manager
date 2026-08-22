@@ -116,10 +116,14 @@ def hold(doctor_id):
 
     patient_id = get_jwt_identity()
     try:
-        hold_obj = hold_slot(doctor_id, target_date, start_time, patient_id, current_app.config["SLOT_HOLD_SECONDS"])
-    except BookingError as e:
-        return jsonify({"error": e.message}), e.status_code
-    return jsonify({"hold_id": hold_obj.id, "expires_at": hold_obj.expires_at.isoformat()}), 201
+        try:
+            hold_obj = hold_slot(doctor_id, target_date, start_time, patient_id, current_app.config["SLOT_HOLD_SECONDS"])
+        except BookingError as e:
+            return jsonify({"error": e.message}), e.status_code
+        return jsonify({"hold_id": hold_obj.id, "expires_at": hold_obj.expires_at.isoformat()}), 201
+    except Exception as e:
+        import traceback
+        return jsonify({"error": str(e), "traceback": traceback.format_exc()}), 500
 
 
 @bp.post("/doctors/<doctor_id>/book")
