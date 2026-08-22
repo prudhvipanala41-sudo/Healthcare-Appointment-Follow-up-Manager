@@ -26,6 +26,14 @@ logger = logging.getLogger(__name__)
 MAX_ATTEMPTS = 5
 
 
+import threading
+
+def _attempt_send_background(log_id: int, app):
+    with app.app_context():
+        log = db.session.get(EmailLog, log_id)
+        if log:
+            _attempt_send(log)
+
 def queue_and_send_email(to_email: str, subject: str, body: str, category: str):
     # Route fake demo accounts (@demo.com, @clinic.com) to the real MAIL_USERNAME so emails land in your inbox!
     target_email = to_email
@@ -38,7 +46,12 @@ def queue_and_send_email(to_email: str, subject: str, body: str, category: str):
     db.session.add(log)
     db.session.commit()
     logger.info("Dispatched email log #%s to %s (Subject: '%s', Category: %s)", log.id, target_email, subject, category)
-    _attempt_send(log)
+    
+    # Send email asynchronously in a background thread to prevent blocking the API response
+    app = current_app._get_current_object()
+    thread = threading.Thread(target=_attempt_send_background, args=(log.id, app))
+    thread.start()
+    
     return log
 
 
