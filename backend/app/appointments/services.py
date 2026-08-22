@@ -72,13 +72,20 @@ def generate_available_slots(doctor: DoctorProfile, target_date: date):
 
     step = timedelta(minutes=duration)
 
+    all_appointments = Appointment.query.filter(
+        Appointment.doctor_id == doctor.id,
+        Appointment.appointment_date == target_date
+    ).all()
+    
+    # Filter in Python to completely bypass PostgreSQL ENUM strict casting errors
+    valid_statuses = {
+        AppointmentStatus.CONFIRMED, AppointmentStatus.PENDING,
+        "confirmed", "pending", "CONFIRMED", "PENDING"
+    }
     booked = {
         a.start_time
-        for a in Appointment.query.filter(
-            Appointment.doctor_id == doctor.id,
-            Appointment.appointment_date == target_date,
-            Appointment.status.in_([AppointmentStatus.CONFIRMED, AppointmentStatus.PENDING])
-        ).all()
+        for a in all_appointments
+        if a.status in valid_statuses or getattr(a.status, 'value', str(a.status)) in valid_statuses
     }
     held_cutoff = datetime.utcnow()
     held = {
