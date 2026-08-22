@@ -19,7 +19,40 @@ from app.doctors_data import DOCTORS_DATA
 
 def run_seed(app):
     with app.app_context():
+        from sqlalchemy import text
+        dialect = db.engine.dialect.name
+        columns = [
+            ("doctor_profiles", "qualifications", "VARCHAR(255) DEFAULT 'MBBS, MD'"),
+            ("doctor_profiles", "experience_years", "INTEGER DEFAULT 10"),
+            ("doctor_profiles", "hospital_name", "VARCHAR(255) DEFAULT 'City Multispeciality Hospital'"),
+            ("doctor_profiles", "location", "VARCHAR(100) DEFAULT 'Bengaluru'"),
+            ("doctor_profiles", "consultation_fee", "INTEGER DEFAULT 800"),
+            ("doctor_profiles", "consultation_mode", "VARCHAR(50) DEFAULT 'Online & In-Clinic'"),
+            ("doctor_profiles", "languages", "VARCHAR(255) DEFAULT 'English, Hindi'"),
+            ("doctor_profiles", "expertise", "TEXT DEFAULT ''"),
+            ("doctor_profiles", "research_interests", "TEXT DEFAULT ''"),
+            ("doctor_profiles", "publications", "TEXT DEFAULT ''"),
+            ("doctor_profiles", "rating", "FLOAT DEFAULT 4.8"),
+            ("doctor_profiles", "review_count", "INTEGER DEFAULT 45"),
+            ("doctor_profiles", "verification_status", "VARCHAR(50) DEFAULT 'Verified Specialist'"),
+            ("doctor_profiles", "image_url", "VARCHAR(500) DEFAULT ''"),
+            ("doctor_profiles", "source_url", "VARCHAR(500) DEFAULT ''"),
+        ]
+        for table, col, col_type in columns:
+            try:
+                if dialect == "postgresql":
+                    db.session.execute(text(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col} {col_type};"))
+                elif dialect == "sqlite":
+                    try:
+                        db.session.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type};"))
+                    except Exception:
+                        pass
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
         # 1. Ensure Admin exists
+
         admin = User.query.filter_by(email="admin@clinic.com").first()
         if not admin:
             admin = User(name="Clinic Admin", email="admin@clinic.com", role=Role.ADMIN)
