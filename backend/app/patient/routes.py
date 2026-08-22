@@ -9,7 +9,7 @@ from app.models import Appointment, AppointmentStatus, DoctorProfile, Medication
 from app.appointments.services import BookingError, book_appointment, cancel_appointment, generate_available_slots, hold_slot
 from app.llm.service import generate_previsit_summary
 from app.notifications.calendar_service import create_events, delete_events
-from app.notifications.email_service import send_booking_pending, send_cancellation
+from app.notifications.email_service import send_booking_pending, send_cancellation, send_appointment_confirmed
 from app.utils.security import roles_required
 
 bp = Blueprint("patient", __name__, url_prefix="/api/patient")
@@ -218,9 +218,9 @@ def book(doctor_id):
 
         # Best-effort side effects — never let these fail the booking itself.
         try:
-            send_booking_confirmation(appointment)
+            send_booking_pending(appointment)
         except Exception:
-            current_app.logger.exception("booking confirmation email failed")
+            current_app.logger.exception("booking pending email failed")
         try:
             create_events(appointment)
         except Exception:

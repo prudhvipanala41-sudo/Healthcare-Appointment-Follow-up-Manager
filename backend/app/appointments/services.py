@@ -189,8 +189,10 @@ def apply_doctor_leave(doctor: DoctorProfile, leave_date: date, reason: str = ""
             db.session.rollback()
             # Already exists due to a race — that's fine, continue
 
-    affected = Appointment.query.filter_by(
-        doctor_id=doctor.id, appointment_date=leave_date, status=AppointmentStatus.BOOKED
+    affected = Appointment.query.filter(
+        Appointment.doctor_id == doctor.id,
+        Appointment.appointment_date == leave_date,
+        Appointment.status.in_([AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED]),
     ).all()
     for appt in affected:
         appt.status = AppointmentStatus.CANCELLED_BY_LEAVE
