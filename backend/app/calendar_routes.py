@@ -144,17 +144,25 @@ def oauth2callback():
         current_app.logger.error("OAuth2 token exchange failed: %s", exc)
         return redirect(f"{current_app.config['FRONTEND_URL']}/?calendar_error=token_exchange_failed")
 
-    token = CalendarToken.query.filter_by(user_id=state).first()
-    if not token:
-        token = CalendarToken(user_id=state, refresh_token=creds.refresh_token)
-        db.session.add(token)
-    else:
-        token.refresh_token = creds.refresh_token or token.refresh_token
-    token.access_token = creds.token
-    token.token_expiry = creds.expiry
-    db.session.commit()
+    try:
+        token = CalendarToken.query.filter_by(user_id=state).first()
+        r_token = creds.refresh_token or (token.refresh_token if token else creds.token) or "access_only"
+        if not token:
+            token = CalendarToken(user_id=state, refresh_token=r_token)
+            db.session.add(token)
+        else:
+            if creds.refresh_token:
+                token.refresh_token = creds.refresh_token
+        token.access_token = creds.token
+        token.token_expiry = creds.expiry
+        db.session.commit()
+    except Exception as exc:
+        current_app.logger.exception("Failed to save calendar token: %s", exc)
+        db.session.rollback()
+        return redirect(f"{current_app.config['FRONTEND_URL']}/?calendar_error=save_failed")
 
     return redirect(f"{current_app.config['FRONTEND_URL']}/?calendar=connected")
+
 
 
 @bp.get("/status")

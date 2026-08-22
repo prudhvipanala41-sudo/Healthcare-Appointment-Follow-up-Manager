@@ -205,6 +205,7 @@ class CalendarToken(db.Model):
     __tablename__ = "calendar_tokens"
     id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
     user_id = db.Column(db.String(36), db.ForeignKey("users.id"), unique=True, nullable=False)
-    refresh_token = db.Column(db.Text, nullable=False)
+    refresh_token = db.Column(db.Text, nullable=True)
     access_token = db.Column(db.Text)
     token_expiry = db.Column(db.DateTime)
+
