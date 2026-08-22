@@ -21,16 +21,12 @@ SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 
 @bp.get("/debug-redirect")
 def debug_redirect():
-    """Temporary debug endpoint - shows exactly what redirect URI would be sent to Google."""
-    host = request.host
-    scheme = "http" if ("localhost" in host or "127.0.0.1" in host) else "https"
-    auto_detected = f"{scheme}://{host}/api/calendar/oauth2callback"
+    """Shows exactly what redirect URI is sent to Google."""
     return jsonify({
-        "request_host": request.host,
-        "request_host_url": request.host_url,
-        "auto_detected_redirect_uri": auto_detected,
+        "computed_redirect_uri": _get_redirect_uri(),
         "configured_redirect_uri": current_app.config.get("GOOGLE_REDIRECT_URI"),
     })
+
 
 
 @bp.get("/test-email")
@@ -88,12 +84,15 @@ def email_logs():
 
 
 def _get_redirect_uri():
-    """Guaranteed production redirect URI matching Google Cloud Console exactly."""
-    host = request.headers.get("X-Forwarded-Host", request.host)
-    if "localhost" in host or "127.0.0.1" in host:
-        return "http://localhost:5000/api/calendar/oauth2callback"
-    # In all production environments, return the exact registered Render HTTPS URL:
-    return "https://healthcare-appointment-follow-up-manager-xpk2.onrender.com/api/calendar/oauth2callback"
+    """Authoritative redirect URI - checks Render environment and config directly."""
+    import os
+    env_uri = current_app.config.get("GOOGLE_REDIRECT_URI", "")
+    if env_uri and "onrender.com" in env_uri:
+        return env_uri.strip()
+    if os.getenv("RENDER") or "onrender.com" in str(os.getenv("DATABASE_URL", "")):
+        return "https://healthcare-appointment-follow-up-manager-xpk2.onrender.com/api/calendar/oauth2callback"
+    return env_uri or "http://localhost:5000/api/calendar/oauth2callback"
+
 
 
 
