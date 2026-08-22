@@ -10,11 +10,22 @@ export default function NavBar() {
   const [isCalendarConnected, setIsCalendarConnected] = useState(false);
 
   useEffect(() => {
-    if (user && (user.role === "patient" || user.role === "doctor")) {
-      api.get("/api/calendar/status")
-        .then(res => setIsCalendarConnected(res.data.connected))
-        .catch(() => {});
+    function checkStatus() {
+      if (user && (user.role === "patient" || user.role === "doctor")) {
+        api.get("/api/calendar/status")
+          .then(res => setIsCalendarConnected(res.data.connected))
+          .catch(() => {});
+      }
     }
+    checkStatus();
+
+    function handleMessage(e) {
+      if (e.data?.type === "CALENDAR_CONNECTED") {
+        setIsCalendarConnected(true);
+      }
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
   }, [user]);
 
   function handleLogout() {
@@ -34,13 +45,23 @@ export default function NavBar() {
     setCalendarBusy(true);
     try {
       const res = await api.get("/api/calendar/connect");
-      window.open(res.data.authorization_url, "_blank", "width=500,height=600");
+      const popup = window.open(res.data.authorization_url, "_blank", "width=500,height=600");
+      const timer = setInterval(async () => {
+        if (popup?.closed) {
+          clearInterval(timer);
+          try {
+            const statusRes = await api.get("/api/calendar/status");
+            setIsCalendarConnected(statusRes.data.connected);
+          } catch {}
+        }
+      }, 1000);
     } catch (err) {
       alert(errorMessage(err));
     } finally {
       setCalendarBusy(false);
     }
   }
+
 
   return (
     <header className="border-b border-glass-border sticky top-0 z-30" style={{ background: "rgba(10,15,30,0.85)", backdropFilter: "blur(16px)" }}>

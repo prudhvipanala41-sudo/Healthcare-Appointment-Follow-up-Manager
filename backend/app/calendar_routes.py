@@ -161,7 +161,34 @@ def oauth2callback():
         db.session.rollback()
         return redirect(f"{current_app.config['FRONTEND_URL']}/?calendar_error=save_failed")
 
-    return redirect(f"{current_app.config['FRONTEND_URL']}/?calendar=connected")
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Calendar Connected</title>
+        <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0f1e; color: #f8fafc; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
+            .badge { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #22d3ee, #14b8a6); display: flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 20px; box-shadow: 0 0 30px rgba(34,211,238,0.4); color: white; }
+            h2 { margin: 0 0 8px; font-size: 22px; font-weight: 700; }
+            p { margin: 0; color: #94a3b8; font-size: 14px; }
+        </style>
+    </head>
+    <body>
+        <div class="badge">✓</div>
+        <h2>Google Calendar Connected!</h2>
+        <p>Closing and returning to Sahayak Health...</p>
+        <script>
+            try {
+                if (window.opener) {
+                    window.opener.postMessage({ type: 'CALENDAR_CONNECTED' }, '*');
+                }
+            } catch (e) {}
+            setTimeout(function() { window.close(); }, 1200);
+        </script>
+    </body>
+    </html>
+    """, 200, {"Content-Type": "text/html"}
+
 
 
 
