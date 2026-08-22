@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api, { errorMessage } from "../../api";
-import PatientLayout from "./PatientLayout";
+import NavBar from "../../components/NavBar";
 import StatusBadge from "../../components/StatusBadge";
 
 export default function HealthRecords() {
@@ -26,8 +26,9 @@ export default function HealthRecords() {
   }
 
   return (
-    <PatientLayout>
-      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 font-body pb-20">
+    <div className="min-h-screen bg-slate-50 font-body">
+      <NavBar />
+      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 pb-20">
         
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -145,6 +146,6 @@ export default function HealthRecords() {
           </div>
         )}
       </div>
-    </PatientLayout>
+    </div>
   );
 }
