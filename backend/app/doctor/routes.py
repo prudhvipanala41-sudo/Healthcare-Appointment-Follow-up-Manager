@@ -182,12 +182,25 @@ def submit_notes(appointment_id):
     appointment.doctor_notes = notes
     appointment.prescription_text = prescription
     appointment.status = AppointmentStatus.COMPLETED
-
-    combined = f"Clinical notes: {notes}\nPrescription: {prescription}"
-    summary, failed = generate_postvisit_summary(combined)
-    appointment.postvisit_summary_text = summary
-    appointment.postvisit_llm_failed = failed
     db.session.commit()
+    
+    import threading
+    def _generate_postvisit_async(app, appt_id, text):
+        with app.app_context():
+            from app.models import Appointment
+            from app.extensions import db
+            from app.llm.service import generate_postvisit_summary
+            
+            summary, failed = generate_postvisit_summary(text)
+            appt = Appointment.query.get(appt_id)
+            if appt:
+                appt.postvisit_summary_text = summary
+                appt.postvisit_llm_failed = failed
+                db.session.commit()
+
+    app = current_app._get_current_object()
+    combined = f"Clinical notes: {notes}\nPrescription: {prescription}"
+    threading.Thread(target=_generate_postvisit_async, args=(app, appointment.id, combined)).start()
 
     # Medication reminders derived from the prescription's stated frequency
     if prescription:
