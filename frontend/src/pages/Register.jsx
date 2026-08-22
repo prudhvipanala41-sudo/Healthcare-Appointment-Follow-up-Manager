@@ -20,7 +20,7 @@ export default function Register() {
     setBusy(true);
     try {
       await register({ ...form, role: "patient" });
-      navigate("/patient");
+      navigate("/login", { state: { message: "Account created successfully! Please log in." } });
     } catch (err) {
       setError(errorMessage(err));
     } finally {

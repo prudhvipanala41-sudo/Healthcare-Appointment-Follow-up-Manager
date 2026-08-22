@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { errorMessage } from "../api";
 
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const message = location.state?.message;
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -47,6 +50,11 @@ export default function Login() {
         </div>
 
         <div className="card p-6 space-y-4">
+          {message && (
+            <div className="flex items-center gap-2 text-sm text-emerald bg-emerald/10 border border-emerald/20 rounded-xl px-4 py-3">
+              <span>✅</span> {message}
+            </div>
+          )}
           {error && (
             <div className="flex items-center gap-2 text-sm text-rose bg-rose/10 border border-rose/20 rounded-xl px-4 py-3">
               <span>⚠</span> {error}
