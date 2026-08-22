@@ -90,7 +90,7 @@ python seed.py
 |------|-------|----------|
 | Admin | admin@clinic.com | Admin@123 |
 | Doctor | dr.asha@clinic.com | Doctor@123 |
-| Patient | patient@demo.com | Patient@123 |
+| Patient | prudhvipanal41@gmail.com | Patient@123 |
 
 ### 3. Frontend setup
 
