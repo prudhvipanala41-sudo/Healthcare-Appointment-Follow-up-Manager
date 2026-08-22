@@ -49,9 +49,10 @@ def create_app(config_object=Config):
     with app.app_context():
         db.create_all()
         try:
-            from seed import DOCTORS_DATA
+            from app.doctors_data import DOCTORS_DATA
             from app.models import User, DoctorProfile, Role
             if DoctorProfile.query.count() < len(DOCTORS_DATA):
+
                 admin = User.query.filter_by(email="admin@clinic.com").first()
                 if not admin:
                     admin = User(name="Clinic Admin", email="admin@clinic.com", role=Role.ADMIN)
