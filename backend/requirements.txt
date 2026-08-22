@@ -11,4 +11,4 @@ google-auth-oauthlib==1.2.1
 google-api-python-client==2.145.0
 email-validator==2.2.0
 gunicorn==22.0.0
-psycopg2-binary==2.9.9
+psycopg[binary]==3.1.18
