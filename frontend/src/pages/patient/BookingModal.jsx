@@ -55,6 +55,8 @@ export default function BookingModal({ doctor, onClose, onBooked }) {
     }
   }
 
+  const [booked, setBooked] = useState(false);
+
   async function confirmBooking() {
     if (!selected) return;
     setBusy(true);
@@ -66,7 +68,11 @@ export default function BookingModal({ doctor, onClose, onBooked }) {
         hold_id: holdId,
         symptoms: symptoms.trim() || undefined,
       });
-      onBooked();
+      setBooked(true);
+      // Show success screen for 2 seconds, then close and refresh
+      setTimeout(() => {
+        onBooked();
+      }, 2000);
     } catch (err) {
       setError(errorMessage(err));
       loadSlots();
@@ -84,12 +90,30 @@ export default function BookingModal({ doctor, onClose, onBooked }) {
     <div
       className="fixed inset-0 backdrop-blur-sm grid place-items-center p-4 z-50 animate-fade-in"
       style={{ background: "rgba(0,0,0,0.7)" }}
-      onClick={onClose}
+      onClick={booked ? undefined : onClose}
     >
       <div
         className="card w-full max-w-lg p-6 animate-slide-up max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* ── SUCCESS SCREEN ── */}
+        {booked ? (
+          <div className="flex flex-col items-center justify-center py-10 gap-5 text-center">
+            <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-glow"
+                 style={{ background: "linear-gradient(135deg, #22d3ee, #14b8a6)" }}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="font-display font-bold text-2xl text-ink mb-1">Booking Confirmed! 🎉</h2>
+              <p className="text-ink-muted text-sm">Your appointment with Dr. {doctor.name}</p>
+              <p className="text-accent font-semibold mt-1">{selected} · {date}</p>
+            </div>
+            <p className="text-xs text-ink-faint">A confirmation email has been sent to you. Redirecting…</p>
+          </div>
+        ) : (
+          <>
         {/* Header */}
         <div className="flex items-start justify-between mb-5">
           <div>
@@ -208,6 +232,8 @@ export default function BookingModal({ doctor, onClose, onBooked }) {
           <p className="text-xs text-ink-faint mt-2 text-center">
             ⏱ This slot is held for you for 2 minutes while you confirm.
           </p>
+        )}
+          </>
         )}
       </div>
     </div>
