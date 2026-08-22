@@ -4,7 +4,7 @@ services:
     env: python
     rootDir: backend
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn run:app"
+    startCommand: "python migrate_final.py && python seed.py && gunicorn run:app"
     envVars:
       - key: FLASK_ENV
         value: production
