@@ -36,9 +36,9 @@ export default function NavBar() {
   const home = user?.role === "patient" ? "/patient" : user?.role === "doctor" ? "/doctor" : "/admin";
 
   const roleColors = {
-    patient: "from-emerald/20 to-emerald/10 text-emerald border-emerald/30",
-    doctor:  "from-accent/20 to-accent/10 text-accent border-accent/30",
-    admin:   "from-rose/20 to-rose/10 text-rose border-rose/30",
+    patient: "bg-emerald-100 text-emerald-600-700 border-emerald-200",
+    doctor:  "bg-blue-100 text-blue-700 border-blue-200",
+    admin:   "bg-rose-100 text-rose-600-700 border-rose-200",
   };
 
   async function connectCalendar() {
@@ -64,54 +64,65 @@ export default function NavBar() {
 
 
   return (
-    <header className="border-b border-glass-border sticky top-0 z-30" style={{ background: "rgba(10,15,30,0.85)", backdropFilter: "blur(16px)" }}>
-      <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
+    <header className="border-b border-slate-200 bg-white sticky top-0 z-30 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link to={user ? home : "/login"} className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center font-display font-bold text-sm shadow-glow-sm group-hover:shadow-glow transition-all duration-300"
-               style={{ background: "linear-gradient(135deg, #22d3ee, #14b8a6)" }}>
-            <span className="text-bg-secondary text-base">⚕</span>
+        <Link to={user ? home : "/login"} className="flex items-center gap-3 group">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-600 text-white shadow-sm group-hover:bg-blue-700 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              <path d="M12 7h5M12 17H7" />
+              <line x1="12" y1="2" x2="12" y2="22" />
+              <path d="M19 12H5" />
+              <path d="M12 5v14" />
+              <path d="M5 12h14" />
+            </svg>
           </div>
-          <span className="font-display font-bold text-lg tracking-tight text-ink">Sahayak Health</span>
+          <span className="font-display font-bold text-xl tracking-tight text-slate-900">Sahayak Health</span>
         </Link>
 
         {user && (
-          <div className="flex items-center gap-3">
-            {/* Calendar connect button — shown when Google Calendar is configured and not yet connected */}
+          <div className="flex items-center gap-4">
+            {/* Calendar connect button */}
             {(user.role === "patient" || user.role === "doctor") && !isCalendarConnected && (
               <button
                 onClick={connectCalendar}
                 disabled={calendarBusy}
                 title="Connect Google Calendar"
-                className="btn-ghost btn-sm hidden sm:flex items-center gap-1.5 text-ink-faint hover:text-accent"
+                className="btn-ghost btn-sm hidden sm:flex items-center gap-2"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
                 </svg>
-                <span className="text-xs">Calendar</span>
+                <span>Calendar</span>
               </button>
             )}
 
             {/* User info */}
-            <div className="hidden sm:flex flex-col items-end">
-              <p className="text-sm font-semibold text-ink leading-tight">{user.name}</p>
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full bg-gradient-to-r border mt-0.5 capitalize ${roleColors[user.role] || "text-ink-muted"}`}>
+            <div className="hidden sm:flex flex-col items-end border-r border-slate-200 pr-4 mr-2">
+              <p className="text-sm font-bold text-slate-900 leading-tight">{user.name}</p>
+              <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full border mt-0.5 ${roleColors[user.role] || "text-slate-500"}`}>
                 {user.role}
               </span>
             </div>
 
-            {/* Avatar circle */}
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center font-display font-bold text-sm border border-glass-border"
-                 style={{ background: "linear-gradient(135deg, rgba(34,211,238,0.2), rgba(20,184,166,0.1))" }}>
-              <span className="text-accent">{user.name?.[0]?.toUpperCase()}</span>
+            {/* User Avatar & Logout */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center border border-blue-200 shadow-inner">
+                <span className="font-display font-bold text-blue-800 text-sm">{user.name.charAt(0).toUpperCase()}</span>
+              </div>
+              <button 
+                onClick={handleLogout} 
+                className="text-slate-400 hover:text-rose-600-600 transition-colors p-2 rounded-lg hover:bg-rose-50"
+                title="Log out"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+              </button>
             </div>
-
-            <button id="logout-btn" onClick={handleLogout} className="btn-ghost btn-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-              <span className="hidden sm:inline">Log out</span>
-            </button>
           </div>
         )}
       </div>

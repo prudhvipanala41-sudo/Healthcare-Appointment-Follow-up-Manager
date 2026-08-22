@@ -24,10 +24,9 @@ function DayPicker({ value, onChange }) {
           <button
             type="button" key={label}
             onClick={() => toggle(idx)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-150 ${
-              active ? "border-accent/60 text-bg-secondary shadow-glow-sm" : "bg-glass border-glass-border text-ink-muted hover:border-accent/30"
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 border ${
+              active ? "bg-blue-600 border-blue-600 text-white shadow-sm" : "bg-white border-slate-200 text-slate-500 hover:border-blue-200"
             }`}
-            style={active ? { background: "linear-gradient(135deg, #22d3ee, #14b8a6)" } : {}}
           >{label}</button>
         );
       })}
@@ -131,10 +130,10 @@ export default function AdminDashboard() {
         {/* Header */}
         <div className="flex items-start justify-between flex-wrap gap-4 mb-8">
           <div>
-            <h1 className="font-display font-bold text-3xl text-ink">
+            <h1 className="font-display font-bold text-3xl text-slate-900">
               Admin <span className="text-gradient">Portal</span>
             </h1>
-            <p className="text-ink-muted text-sm mt-1">Manage doctor profiles, schedules, and leave days.</p>
+            <p className="text-slate-500 text-sm mt-1">Manage doctor profiles, schedules, and leave days.</p>
           </div>
           <div className="tab-bar">
             <button className={`tab-btn ${tab === "doctors" ? "active" : ""}`} onClick={() => setTab("doctors")}>
@@ -148,12 +147,12 @@ export default function AdminDashboard() {
 
         {/* Alerts */}
         {error && (
-          <div className="flex items-center gap-2 text-sm text-rose bg-rose/10 border border-rose/20 rounded-xl px-4 py-3 mb-4">
+          <div className="flex items-center gap-2 text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 mb-4">
             <span>⚠</span> {error}
           </div>
         )}
         {message && (
-          <div className="flex items-center gap-2 text-sm text-emerald bg-emerald/10 border border-emerald/20 rounded-xl px-4 py-3 mb-4">
+          <div className="flex items-center gap-2 text-sm text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-4">
             <span>✓</span> {message}
           </div>
         )}
@@ -164,7 +163,7 @@ export default function AdminDashboard() {
             {doctors.length === 0 && (
               <div className="card p-12 text-center">
                 <p className="text-4xl mb-3">👨‍⚕️</p>
-                <p className="text-ink-muted">No doctors yet. Add one using the "Add Doctor" tab.</p>
+                <p className="text-slate-500">No doctors yet. Add one using the "Add Doctor" tab.</p>
               </div>
             )}
             {doctors.map((d) => (
@@ -173,13 +172,13 @@ export default function AdminDashboard() {
                 <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg flex-shrink-0"
-                         style={{ background: "linear-gradient(135deg, rgba(34,211,238,0.2), rgba(20,184,166,0.1))" }}>
-                      <span className="text-accent">{d.name?.[0]?.toUpperCase()}</span>
+                         style={{ background: "linear-gradient(135deg, #bfdbfe, rgba(20,184,166,0.1))" }}>
+                      <span className="text-blue-600">{d.name?.[0]?.toUpperCase()}</span>
                     </div>
                     <div>
-                      <p className="font-display font-bold text-ink">Dr. {d.name}</p>
-                      <p className="text-accent text-sm font-semibold">{d.specialisation}</p>
-                      <p className="text-ink-faint text-xs mt-0.5">
+                      <p className="font-display font-bold text-slate-900">Dr. {d.name}</p>
+                      <p className="text-blue-600 text-sm font-semibold">{d.specialisation}</p>
+                      <p className="text-slate-400 text-xs mt-0.5">
                         {d.working_start}–{d.working_end} · {d.slot_duration_minutes} min slots · {d.email}
                       </p>
                     </div>
@@ -220,7 +219,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Leave management */}
-                <div className="border-t border-glass-border pt-4">
+                <div className="border-t border-slate-200 pt-4">
                   <div className="flex gap-2 flex-wrap items-end">
                     <div>
                       <label className="label">Mark leave date</label>
@@ -255,16 +254,16 @@ export default function AdminDashboard() {
                   {/* Expanded leave list */}
                   {expandedLeaves[d.id] && expandedLeaves[d.id].length > 0 && (
                     <div className="mt-3 space-y-2">
-                      <p className="text-xs text-ink-faint font-semibold uppercase tracking-wide">Scheduled leaves</p>
+                      <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">Scheduled leaves</p>
                       {expandedLeaves[d.id].map((l) => (
-                        <div key={l.id} className="flex items-center justify-between bg-glass rounded-xl px-4 py-2 border border-glass-border">
+                        <div key={l.id} className="flex items-center justify-between bg-white rounded-xl px-4 py-2 border border-slate-200">
                           <div>
-                            <p className="text-sm text-ink font-medium">📅 {l.leave_date}</p>
-                            {l.reason && <p className="text-ink-faint text-xs">{l.reason}</p>}
+                            <p className="text-sm text-slate-900 font-medium">📅 {l.leave_date}</p>
+                            {l.reason && <p className="text-slate-400 text-xs">{l.reason}</p>}
                           </div>
                           <button
                             id={`remove-leave-admin-${l.id}`}
-                            className="btn-ghost btn-sm text-rose"
+                            className="btn-ghost btn-sm text-rose-600"
                             onClick={() => removeLeave(d.id, l.id)}
                           >
                             Remove
@@ -274,7 +273,7 @@ export default function AdminDashboard() {
                     </div>
                   )}
                   {expandedLeaves[d.id] && expandedLeaves[d.id].length === 0 && (
-                    <p className="text-ink-faint text-xs mt-3">No scheduled leave days.</p>
+                    <p className="text-slate-400 text-xs mt-3">No scheduled leave days.</p>
                   )}
                 </div>
               </div>
@@ -285,7 +284,7 @@ export default function AdminDashboard() {
         {/* ── Add Doctor Tab ── */}
         {tab === "add" && (
           <div className="animate-slide-up max-w-2xl">
-            <h2 className="font-display font-semibold text-xl text-ink mb-5">Add a new doctor</h2>
+            <h2 className="font-display font-semibold text-xl text-slate-900 mb-5">Add a new doctor</h2>
             <form id="add-doctor-form" onSubmit={createDoctor} className="card p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -332,8 +331,8 @@ export default function AdminDashboard() {
                onClick={() => setEditDoc(null)}>
             <div className="card w-full max-w-lg p-6 animate-slide-up" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-5">
-                <h2 className="font-display font-bold text-xl text-ink">Edit Dr. {editDoc.name}</h2>
-                <button className="text-ink-faint hover:text-ink text-2xl" onClick={() => setEditDoc(null)}>×</button>
+                <h2 className="font-display font-bold text-xl text-slate-900">Edit Dr. {editDoc.name}</h2>
+                <button className="text-slate-400 hover:text-slate-900 text-2xl" onClick={() => setEditDoc(null)}>×</button>
               </div>
               <div className="space-y-4">
                 <div>

@@ -99,41 +99,41 @@ export default function BookingModal({ doctor, onClose, onBooked }) {
         {/* ── SUCCESS SCREEN ── */}
         {booked ? (
           <div className="flex flex-col items-center justify-center py-10 gap-5 text-center">
-            <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-glow"
+            <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-md"
                  style={{ background: "linear-gradient(135deg, #22d3ee, #14b8a6)" }}>
               <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
             <div>
-              <h2 className="font-display font-bold text-2xl text-ink mb-1">Booking Confirmed! 🎉</h2>
-              <p className="text-ink-muted text-sm">Your appointment with Dr. {doctor.name}</p>
-              <p className="text-accent font-semibold mt-1">{selected} · {date}</p>
+              <h2 className="font-display font-bold text-2xl text-slate-900 mb-1">Booking Confirmed! 🎉</h2>
+              <p className="text-slate-500 text-sm">Your appointment with Dr. {doctor.name}</p>
+              <p className="text-blue-600 font-semibold mt-1">{selected} · {date}</p>
             </div>
-            <p className="text-xs text-ink-faint">A confirmation email has been sent to you. Redirecting…</p>
+            <p className="text-xs text-slate-400">A confirmation email has been sent to you. Redirecting…</p>
           </div>
         ) : (
           <>
         {/* Header */}
         <div className="flex items-start justify-between mb-5">
           <div>
-            <h2 className="font-display font-bold text-xl text-ink">Dr. {doctor.name}</h2>
-            <p className="text-accent text-sm font-semibold mt-0.5">{doctor.specialisation}</p>
-            <p className="text-ink-faint text-xs mt-1">
+            <h2 className="font-display font-bold text-xl text-slate-900">Dr. {doctor.name}</h2>
+            <p className="text-blue-600 text-sm font-semibold mt-0.5">{doctor.specialisation}</p>
+            <p className="text-slate-400 text-xs mt-1">
               {doctor.working_start}–{doctor.working_end} · {doctor.slot_duration_minutes} min slots
             </p>
           </div>
           <button
             id="close-booking-modal"
             onClick={onClose}
-            className="text-ink-faint hover:text-ink transition-colors text-2xl leading-none w-8 h-8 flex items-center justify-center rounded-lg hover:bg-glass-light"
+            className="text-slate-400 hover:text-slate-900 transition-colors text-2xl leading-none w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white-light"
           >
             ×
           </button>
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 text-sm text-rose bg-rose/10 border border-rose/20 rounded-xl px-4 py-3 mb-4">
+          <div className="flex items-center gap-2 text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 mb-4">
             <span>⚠</span> {error}
           </div>
         )}
@@ -149,7 +149,7 @@ export default function BookingModal({ doctor, onClose, onBooked }) {
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
-          {dayLabel && <p className="text-xs text-ink-faint mt-1">{dayLabel}</p>}
+          {dayLabel && <p className="text-xs text-slate-400 mt-1">{dayLabel}</p>}
         </div>
 
         {/* Slot grid */}
@@ -160,7 +160,7 @@ export default function BookingModal({ doctor, onClose, onBooked }) {
               id="refresh-slots-btn"
               onClick={loadSlots}
               disabled={slotsLoading}
-              className="text-xs text-accent hover:text-accent-glow transition-colors disabled:opacity-50"
+              className="text-xs text-blue-600 hover:text-blue-600-glow transition-colors disabled:opacity-50"
             >
               {slotsLoading ? "Loading…" : "↺ Refresh"}
             </button>
@@ -169,7 +169,7 @@ export default function BookingModal({ doctor, onClose, onBooked }) {
           {slotsLoading ? (
             <div className="grid grid-cols-4 gap-2 mb-1">
               {[...Array(8)].map((_, i) => (
-                <div key={i} className="h-10 rounded-xl bg-glass-light animate-pulse" />
+                <div key={i} className="h-10 rounded-xl bg-white-light animate-pulse" />
               ))}
             </div>
           ) : (
@@ -181,16 +181,15 @@ export default function BookingModal({ doctor, onClose, onBooked }) {
                   onClick={() => pickSlot(s)}
                   className={`rounded-xl px-2 py-2.5 text-sm font-semibold border transition-all duration-150 ${
                     selected === s
-                      ? "border-accent/60 text-bg-secondary shadow-glow-sm scale-105"
-                      : "bg-glass border-glass-border text-ink-muted hover:border-accent/40 hover:text-ink"
+                      ? "bg-blue-600 border-blue-600 text-white shadow-sm scale-105"
+                      : "bg-white border-slate-200 text-slate-500 hover:border-blue-300 hover:text-slate-900"
                   }`}
-                  style={selected === s ? { background: "linear-gradient(135deg, #22d3ee, #14b8a6)" } : {}}
                 >
                   {s}
                 </button>
               ))}
               {slots.length === 0 && (
-                <p className="col-span-4 text-sm text-ink-faint py-6 text-center">
+                <p className="col-span-4 text-sm text-slate-400 py-6 text-center">
                   No slots available — the doctor may be off or fully booked this day.
                 </p>
               )}
@@ -200,7 +199,7 @@ export default function BookingModal({ doctor, onClose, onBooked }) {
 
         {/* Symptoms — optional, submitted with booking */}
         <div className="mb-5">
-          <label className="label">Describe your symptoms <span className="normal-case font-normal text-ink-faint">(optional — helps the doctor prepare)</span></label>
+          <label className="label">Describe your symptoms <span className="normal-case font-normal text-slate-400">(optional — helps the doctor prepare)</span></label>
           <textarea
             id="booking-symptoms"
             className="input min-h-[80px] resize-none"
@@ -229,7 +228,7 @@ export default function BookingModal({ doctor, onClose, onBooked }) {
           )}
         </button>
         {selected && (
-          <p className="text-xs text-ink-faint mt-2 text-center">
+          <p className="text-xs text-slate-400 mt-2 text-center">
             ⏱ This slot is held for you for 2 minutes while you confirm.
           </p>
         )}

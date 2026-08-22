@@ -145,10 +145,10 @@ export default function PatientDashboard() {
         {/* Header */}
         <div className="flex items-start justify-between flex-wrap gap-4 mb-8">
           <div>
-            <h1 className="font-display font-bold text-3xl text-ink">
+            <h1 className="font-display font-bold text-3xl text-slate-900">
               Hello, <span className="text-gradient">{user?.name?.split(" ")[0]}</span> 👋
             </h1>
-            <p className="text-ink-muted text-sm mt-1">Find top-rated specialists, research their clinical background, and book instant slots.</p>
+            <p className="text-slate-500 text-sm mt-1">Find top-rated specialists, research their clinical background, and book instant slots.</p>
           </div>
           <div className="tab-bar">
             <button
@@ -163,7 +163,7 @@ export default function PatientDashboard() {
             >
               📋 My Appointments
               {booked > 0 && (
-                <span className="ml-1.5 bg-accent text-bg-secondary text-xs rounded-full w-5 h-5 inline-flex items-center justify-center font-bold">
+                <span className="ml-1.5 bg-blue-600 text-white text-xs rounded-full w-5 h-5 inline-flex items-center justify-center font-bold">
                   {booked}
                 </span>
               )}
@@ -175,15 +175,15 @@ export default function PatientDashboard() {
         {tab === "appointments" && appointments.length > 0 && (
           <div className="grid grid-cols-3 gap-4 mb-6">
             {[
-              { label: "Upcoming", value: booked,    icon: "📅", color: "text-accent",   bg: "from-accent/15 to-accent/5" },
-              { label: "Completed", value: completed, icon: "✅", color: "text-emerald",  bg: "from-emerald/15 to-emerald/5" },
-              { label: "Cancelled", value: cancelled, icon: "❌", color: "text-rose",     bg: "from-rose/15 to-rose/5" },
+              { label: "Upcoming", value: booked,    icon: "📅", color: "text-blue-600",   bg: "bg-blue-50 border border-blue-100" },
+              { label: "Completed", value: completed, icon: "✅", color: "text-emerald-600",  bg: "bg-emerald-50 border border-emerald-100" },
+              { label: "Cancelled", value: cancelled, icon: "❌", color: "text-rose-600",     bg: "bg-rose-50 border border-rose-100" },
             ].map((s) => (
-              <div key={s.label} className={`card p-4 bg-gradient-to-br ${s.bg} flex items-center gap-3`}>
+              <div key={s.label} className={`card p-4  ${s.bg} flex items-center gap-3`}>
                 <span className="text-2xl">{s.icon}</span>
                 <div>
                   <p className={`font-display font-bold text-2xl ${s.color}`}>{s.value}</p>
-                  <p className="text-ink-faint text-xs">{s.label}</p>
+                  <p className="text-slate-400 text-xs">{s.label}</p>
                 </div>
               </div>
             ))}
@@ -191,9 +191,9 @@ export default function PatientDashboard() {
         )}
 
         {error && (
-          <div className="flex items-center gap-2 text-sm text-rose bg-rose/10 border border-rose/20 rounded-xl px-4 py-3 mb-4">
+          <div className="flex items-center gap-2 text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 mb-4">
             <span>⚠</span> {error}
-            <button onClick={() => setError("")} className="ml-auto text-rose/60 hover:text-rose">×</button>
+            <button onClick={() => setError("")} className="ml-auto text-rose-600/60 hover:text-rose-600">×</button>
           </div>
         )}
 
@@ -201,11 +201,11 @@ export default function PatientDashboard() {
         {tab === "book" && (
           <div className="animate-slide-up space-y-6">
             {/* Search & Filter Header Panel */}
-            <div className="card p-5 space-y-4 border-glass-border">
+            <div className="card p-5 space-y-4 border-slate-200">
               <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
                 {/* Search input */}
                 <div className="relative flex-1">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint text-sm">🔍</span>
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
                   <input
                     id="doctor-search-input"
                     className="input pl-10 w-full"
@@ -216,7 +216,7 @@ export default function PatientDashboard() {
                   {search && (
                     <button
                       onClick={() => setSearch("")}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink text-sm"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900 text-sm"
                     >
                       ×
                     </button>
@@ -269,8 +269,8 @@ export default function PatientDashboard() {
                       onClick={() => setSelectedSpecialty(spec)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
                         active
-                          ? "bg-accent text-bg-primary shadow-glow-sm scale-105"
-                          : "bg-glass hover:bg-glass-light text-ink-muted border border-glass-border hover:border-accent/40"
+                          ? "bg-blue-600 text-white shadow-sm scale-105"
+                          : "bg-white hover:bg-white-light text-slate-500 border border-slate-200 hover:border-blue-300"
                       }`}
                     >
                       {spec}
@@ -281,67 +281,67 @@ export default function PatientDashboard() {
             </div>
 
             {/* Results Count & Status */}
-            <div className="flex items-center justify-between px-1 text-xs text-ink-faint">
+            <div className="flex items-center justify-between px-1 text-xs text-slate-400">
               <span>
-                Showing <strong className="text-ink">{doctors.length}</strong> specialists
+                Showing <strong className="text-slate-900">{doctors.length}</strong> specialists
                 {selectedSpecialty !== "All" ? ` in ${selectedSpecialty}` : ""}
                 {selectedLocation !== "All" ? ` in ${selectedLocation}` : ""}
               </span>
-              {loadingDoctors && <span className="text-accent animate-pulse">Updating live results...</span>}
+              {loadingDoctors && <span className="text-blue-600 animate-pulse">Updating live results...</span>}
             </div>
 
-            {/* Doctors Grid */}
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {doctors.map((d) => {
+              {doctors.map((d, i) => {
                 const displayName = d.name?.startsWith("Dr.") ? d.name : `Dr. ${d.name}`;
                 return (
                   <div
                     key={d.id}
-                    className="card p-5 flex flex-col group hover:border-accent/40 hover:shadow-2xl transition-all duration-300 relative overflow-hidden"
+                    className="card p-5 flex flex-col group hover:border-blue-300 hover:shadow-2xl transition-all duration-300 relative overflow-hidden animate-slide-up"
+                    style={{ animationDelay: `${i * 50}ms`, animationFillMode: "both" }}
                   >
                     {/* Header: Avatar, Name, Rating */}
                     <div className="flex items-start gap-3.5 mb-3">
                       <div
-                        className="w-13 h-13 rounded-2xl flex items-center justify-center font-display font-bold text-lg flex-shrink-0 shadow-glow-sm"
-                        style={{ background: "linear-gradient(135deg, rgba(34,211,238,0.2), rgba(20,184,166,0.12))" }}
+                        className="w-13 h-13 rounded-2xl flex items-center justify-center font-display font-bold text-lg flex-shrink-0 shadow-sm"
+                        style={{ background: "#eff6ff" }}
                       >
-                        <span className="text-accent">{d.name ? d.name.replace("Dr. ", "").charAt(0) : "D"}</span>
+                        <span className="text-blue-600">{d.name ? d.name.replace("Dr. ", "").charAt(0) : "D"}</span>
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-1">
-                          <p className="font-display font-bold text-base text-ink truncate group-hover:text-accent transition-colors">
+                          <p className="font-display font-bold text-base text-slate-900 truncate group-hover:text-blue-600 transition-colors">
                             {displayName}
                           </p>
                         </div>
-                        <p className="text-accent text-xs font-semibold mt-0.5 truncate">{d.specialisation}</p>
-                        <p className="text-ink-faint text-[11px] mt-0.5 truncate">
+                        <p className="text-blue-600 text-xs font-semibold mt-0.5 truncate">{d.specialisation}</p>
+                        <p className="text-slate-400 text-[11px] mt-0.5 truncate">
                           {d.qualifications || "MBBS, MD"} · {d.experience_years || 10}y exp
                         </p>
                       </div>
                     </div>
 
                     {/* Hospital & Location Tag */}
-                    <div className="text-xs text-ink-muted mb-2.5 flex items-center gap-1.5 truncate">
+                    <div className="text-xs text-slate-500 mb-2.5 flex items-center gap-1.5 truncate">
                       <span>🏥</span>
                       <span className="truncate">{d.hospital_name || "City Hospital"}</span>
                       <span>·</span>
-                      <span className="text-ink font-medium shrink-0">📍 {d.location || "Bengaluru"}</span>
+                      <span className="text-slate-900 font-medium shrink-0">📍 {d.location || "Bengaluru"}</span>
                     </div>
 
                     {/* Bio Snippet */}
-                    <p className="text-ink-muted text-xs mb-3 line-clamp-2 flex-1 leading-relaxed">
+                    <p className="text-slate-500 text-xs mb-3 line-clamp-2 flex-1 leading-relaxed">
                       {d.bio || "Experienced clinical specialist providing patient-centered therapeutic care."}
                     </p>
 
                     {/* Quick Badges Row: Rating, Mode, Fee */}
-                    <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-glass border border-glass-border text-xs mb-4">
+                    <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white border border-slate-200 text-xs mb-4">
                       <div className="flex items-center gap-1">
-                        <span className="text-amber font-bold">★ {d.rating || "4.9"}</span>
-                        <span className="text-ink-faint text-[11px]">({d.review_count || 45})</span>
+                        <span className="text-amber-500 font-bold">★ {d.rating || "4.9"}</span>
+                        <span className="text-slate-400 text-[11px]">({d.review_count || 45})</span>
                       </div>
                       <div className="text-right">
-                        <span className="text-ink font-bold text-sm">₹{d.consultation_fee || 800}</span>
-                        <span className="text-ink-faint text-[10px] block">{d.consultation_mode?.includes("Online") ? "🌐 Online / Clinic" : "🏥 In-Clinic"}</span>
+                        <span className="text-slate-900 font-bold text-sm">₹{d.consultation_fee || 800}</span>
+                        <span className="text-slate-400 text-[10px] block">{d.consultation_mode?.includes("Online") ? "🌐 Online / Clinic" : "🏥 In-Clinic"}</span>
                       </div>
                     </div>
 
@@ -349,13 +349,13 @@ export default function PatientDashboard() {
                     <div className="grid grid-cols-2 gap-2 mt-auto">
                       <button
                         onClick={() => setViewingDoctor(d)}
-                        className="btn-ghost text-xs py-2 px-3 border border-glass-border hover:border-accent/40 font-semibold"
+                        className="btn-ghost text-xs py-2 px-3 border border-slate-200 hover:border-blue-300 font-semibold"
                       >
                         View Profile
                       </button>
                       <button
                         id={`book-doctor-${d.id}`}
-                        className="btn-primary text-xs py-2 px-3 font-semibold shadow-glow-sm"
+                        className="btn-primary text-xs py-2 px-3 font-semibold shadow-sm"
                         onClick={() => setSelectedDoctor(d)}
                       >
                         Book Slot →
@@ -368,8 +368,8 @@ export default function PatientDashboard() {
               {!loadingDoctors && doctors.length === 0 && (
                 <div className="col-span-full card p-12 text-center">
                   <p className="text-4xl mb-3">🔍</p>
-                  <h3 className="text-lg font-bold text-ink mb-1">No specialists match your filter</h3>
-                  <p className="text-ink-muted text-sm max-w-md mx-auto mb-4">
+                  <h3 className="text-lg font-bold text-slate-900 mb-1">No specialists match your filter</h3>
+                  <p className="text-slate-500 text-sm max-w-md mx-auto mb-4">
                     Try broadening your specialty or city filter to view our verified medical directory.
                   </p>
                   <button
@@ -389,18 +389,18 @@ export default function PatientDashboard() {
               {loadingDoctors && doctors.length === 0 && [...Array(6)].map((_, i) => (
                 <div key={i} className="card p-5 animate-pulse space-y-3">
                   <div className="flex gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-glass-light" />
+                    <div className="w-12 h-12 rounded-2xl bg-white-light" />
                     <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-glass-light rounded w-3/4" />
-                      <div className="h-3 bg-glass-light rounded w-1/2" />
+                      <div className="h-4 bg-white-light rounded w-3/4" />
+                      <div className="h-3 bg-white-light rounded w-1/2" />
                     </div>
                   </div>
-                  <div className="h-3 bg-glass-light rounded" />
-                  <div className="h-3 bg-glass-light rounded w-2/3" />
-                  <div className="h-10 bg-glass-light rounded-xl" />
+                  <div className="h-3 bg-white-light rounded" />
+                  <div className="h-3 bg-white-light rounded w-2/3" />
+                  <div className="h-10 bg-white-light rounded-xl" />
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="h-8 bg-glass-light rounded-lg" />
-                    <div className="h-8 bg-glass-light rounded-lg" />
+                    <div className="h-8 bg-white-light rounded-lg" />
+                    <div className="h-8 bg-white-light rounded-lg" />
                   </div>
                 </div>
               ))}
@@ -428,27 +428,31 @@ export default function PatientDashboard() {
               <div className="space-y-3">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="card p-5 animate-pulse">
-                    <div className="flex gap-3"><div className="flex-1 space-y-2"><div className="h-5 bg-glass-light rounded w-1/3" /><div className="h-3 bg-glass-light rounded w-1/2" /></div><div className="w-20 h-6 bg-glass-light rounded-full" /></div>
+                    <div className="flex gap-3"><div className="flex-1 space-y-2"><div className="h-5 bg-white-light rounded w-1/3" /><div className="h-3 bg-white-light rounded w-1/2" /></div><div className="w-20 h-6 bg-white-light rounded-full" /></div>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="space-y-4">
-                {appointments.map((a) => {
+                {appointments.map((a, i) => {
                   const summary = safeParseJSON(a.previsit_summary);
                   return (
-                    <div key={a.id} className="card p-5 hover:border-glass-border-light transition-all">
+                    <div 
+                      key={a.id} 
+                      className="card p-5 hover:border-slate-300 transition-all animate-slide-up"
+                      style={{ animationDelay: `${i * 50}ms`, animationFillMode: "both" }}
+                    >
                       {/* Appointment header */}
                       <div className="flex items-start justify-between flex-wrap gap-2">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
-                               style={{ background: "linear-gradient(135deg, rgba(34,211,238,0.2), rgba(20,184,166,0.1))" }}>
-                            <span className="text-accent">Dr</span>
+                               style={{ background: "linear-gradient(135deg, #bfdbfe, rgba(20,184,166,0.1))" }}>
+                            <span className="text-blue-600">Dr</span>
                           </div>
                           <div>
-                            <p className="font-display font-bold text-ink">Dr. {a.doctor_name}</p>
-                            <p className="text-ink-muted text-sm">{a.specialisation}</p>
-                            <p className="text-ink-faint text-xs mt-0.5">
+                            <p className="font-display font-bold text-slate-900">Dr. {a.doctor_name}</p>
+                            <p className="text-slate-500 text-sm">{a.specialisation}</p>
+                            <p className="text-slate-400 text-xs mt-0.5">
                               📅 {a.appointment_date} at {a.start_time}
                             </p>
                           </div>
@@ -461,7 +465,7 @@ export default function PatientDashboard() {
 
                       {/* Symptom form — only if booked and no symptoms yet */}
                       {a.status === "booked" && !a.symptoms_text && (
-                        <div className="mt-4 border-t border-glass-border pt-4">
+                        <div className="mt-4 border-t border-slate-200 pt-4">
                           <label className="label">Tell the doctor how you're feeling</label>
                           <textarea
                             id={`symptoms-${a.id}`}
@@ -482,38 +486,38 @@ export default function PatientDashboard() {
 
                       {/* Already submitted symptoms */}
                       {a.symptoms_text && !summary && (
-                        <div className="mt-3 px-4 py-3 rounded-xl bg-glass-light border border-glass-border text-sm text-ink-muted">
-                          <span className="font-semibold text-ink-faint text-xs uppercase tracking-wide">Symptoms submitted: </span>
+                        <div className="mt-3 px-4 py-3 rounded-xl bg-white-light border border-slate-200 text-sm text-slate-500">
+                          <span className="font-semibold text-slate-400 text-xs uppercase tracking-wide">Symptoms submitted: </span>
                           {a.symptoms_text}
                         </div>
                       )}
 
                       {/* AI pre-visit summary */}
                       {summary && (
-                        <div className="mt-4 border-t border-glass-border pt-4 rounded-b-xl">
-                          <p className="text-xs font-semibold uppercase tracking-widest text-ink-faint mb-3">🤖 AI Pre-Visit Summary</p>
+                        <div className="mt-4 border-t border-slate-200 pt-4 rounded-b-xl">
+                          <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">🤖 AI Pre-Visit Summary</p>
                           {a.previsit_llm_failed && (
-                            <p className="text-xs text-amber bg-amber/10 border border-amber/20 rounded-lg px-3 py-2 mb-3">
+                            <p className="text-xs text-amber-500 bg-amber-50 border border-amber/20 rounded-lg px-3 py-2 mb-3">
                               ⚠ AI summary unavailable — showing default assessment.
                             </p>
                           )}
                           <div className="grid sm:grid-cols-2 gap-3">
-                            <div className="bg-glass rounded-xl p-3 border border-glass-border">
-                              <p className="text-xs text-ink-faint mb-1">Chief complaint</p>
-                              <p className="text-sm text-ink font-medium">{summary.chief_complaint}</p>
+                            <div className="bg-white rounded-xl p-3 border border-slate-200">
+                              <p className="text-xs text-slate-400 mb-1">Chief complaint</p>
+                              <p className="text-sm text-slate-900 font-medium">{summary.chief_complaint}</p>
                             </div>
-                            <div className="bg-glass rounded-xl p-3 border border-glass-border">
-                              <p className="text-xs text-ink-faint mb-1">Urgency level</p>
+                            <div className="bg-white rounded-xl p-3 border border-slate-200">
+                              <p className="text-xs text-slate-400 mb-1">Urgency level</p>
                               <UrgencyBadge level={summary.urgency} />
                             </div>
                           </div>
                           {summary.suggested_questions?.length > 0 && (
-                            <div className="mt-3 bg-glass rounded-xl p-3 border border-glass-border">
-                              <p className="text-xs text-ink-faint mb-2">Questions to ask the doctor</p>
+                            <div className="mt-3 bg-white rounded-xl p-3 border border-slate-200">
+                              <p className="text-xs text-slate-400 mb-2">Questions to ask the doctor</p>
                               <ul className="space-y-1">
                                 {summary.suggested_questions.map((q, i) => (
-                                  <li key={i} className="text-sm text-ink-muted flex gap-2">
-                                    <span className="text-accent text-xs mt-0.5">→</span> {q}
+                                  <li key={i} className="text-sm text-slate-500 flex gap-2">
+                                    <span className="text-blue-600 text-xs mt-0.5">→</span> {q}
                                   </li>
                                 ))}
                               </ul>
@@ -524,22 +528,22 @@ export default function PatientDashboard() {
 
                       {/* Post-visit summary */}
                       {a.postvisit_summary && (
-                        <div className="mt-4 border-t border-glass-border pt-4">
-                          <p className="text-xs font-semibold uppercase tracking-widest text-ink-faint mb-3">📋 Visit Summary</p>
+                        <div className="mt-4 border-t border-slate-200 pt-4">
+                          <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">📋 Visit Summary</p>
                           {a.postvisit_llm_failed && (
-                            <p className="text-xs text-amber bg-amber/10 border border-amber/20 rounded-lg px-3 py-2 mb-3">
+                            <p className="text-xs text-amber-500 bg-amber-50 border border-amber/20 rounded-lg px-3 py-2 mb-3">
                               ⚠ AI summary unavailable — showing doctor's raw notes.
                             </p>
                           )}
-                          <div className="bg-glass rounded-xl p-4 border border-glass-border">
-                            <p className="text-sm text-ink whitespace-pre-line leading-relaxed">{a.postvisit_summary}</p>
+                          <div className="bg-white rounded-xl p-4 border border-slate-200">
+                            <p className="text-sm text-slate-900 whitespace-pre-line leading-relaxed">{a.postvisit_summary}</p>
                           </div>
                         </div>
                       )}
 
                       {/* Actions */}
                       {a.status === "booked" && (
-                        <div className="mt-4 pt-3 border-t border-glass-border flex gap-2">
+                        <div className="mt-4 pt-3 border-t border-slate-200 flex gap-2">
                           <button
                             id={`cancel-appt-${a.id}`}
                             className="btn-danger btn-sm"
@@ -555,8 +559,8 @@ export default function PatientDashboard() {
                 {appointments.length === 0 && (
                   <div className="card p-12 text-center">
                     <p className="text-4xl mb-3">📭</p>
-                    <p className="text-ink-muted text-lg font-semibold">No appointments yet</p>
-                    <p className="text-ink-faint text-sm mt-1">Switch to "Find Doctor" to book your first appointment.</p>
+                    <p className="text-slate-500 text-lg font-semibold">No appointments yet</p>
+                    <p className="text-slate-400 text-sm mt-1">Switch to "Find Doctor" to book your first appointment.</p>
                     <button className="btn-primary mt-4" onClick={() => setTab("book")}>Find a doctor</button>
                   </div>
                 )}

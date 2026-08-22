@@ -10,7 +10,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 
 function Protected({ role, children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen grid place-items-center text-ink/40">Loading…</div>;
+  if (loading) return <div className="min-h-screen grid place-items-center text-slate-900/40">Loading…</div>;
   if (!user) return <Navigate to="/login" replace />;
   if (role && user.role !== role) return <Navigate to="/login" replace />;
   return children;
@@ -20,7 +20,7 @@ export default function App() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div className="min-h-screen grid place-items-center text-ink/40">Loading…</div>;
+    return <div className="min-h-screen grid place-items-center text-slate-900/40">Loading…</div>;
   }
 
   return (

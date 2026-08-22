@@ -1,22 +1,22 @@
 const STATUS_CONFIG = {
   booked: {
     label: "Booked",
-    className: "bg-accent/15 text-accent border border-accent/25",
-    dot: "bg-accent",
+    className: "bg-blue-600/15 text-blue-600 border border-accent/25",
+    dot: "bg-blue-600",
   },
   completed: {
     label: "Completed",
-    className: "bg-emerald/15 text-emerald border border-emerald/25",
+    className: "bg-emerald-100 text-emerald-600 border border-emerald/25",
     dot: "bg-emerald",
   },
   cancelled: {
     label: "Cancelled",
-    className: "bg-ink-faint/15 text-ink-muted border border-glass-border",
+    className: "bg-ink-faint/15 text-slate-500 border border-slate-200",
     dot: "bg-ink-faint",
   },
   cancelled_by_leave: {
     label: "Cancelled (Leave)",
-    className: "bg-rose/15 text-rose border border-rose/25",
+    className: "bg-rose-100 text-rose-600 border border-rose/25",
     dot: "bg-rose",
   },
 };
@@ -24,7 +24,7 @@ const STATUS_CONFIG = {
 export default function StatusBadge({ status }) {
   const cfg = STATUS_CONFIG[status] || {
     label: status,
-    className: "bg-glass text-ink-muted border border-glass-border",
+    className: "bg-white text-slate-500 border border-slate-200",
     dot: "bg-ink-faint",
   };
   return (

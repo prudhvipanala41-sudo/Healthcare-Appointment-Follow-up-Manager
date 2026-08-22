@@ -144,11 +144,11 @@ export default function DoctorDashboard() {
         {/* Header */}
         <div className="flex items-start justify-between flex-wrap gap-4 mb-8">
           <div>
-            <h1 className="font-display font-bold text-3xl text-ink">
+            <h1 className="font-display font-bold text-3xl text-slate-900">
               Dr. <span className="text-gradient">{user?.name}</span>
             </h1>
             {profile && (
-              <p className="text-ink-muted text-sm mt-1">{profile.specialisation} · {profile.working_start}–{profile.working_end}</p>
+              <p className="text-slate-500 text-sm mt-1">{profile.specialisation} · {profile.working_start}–{profile.working_end}</p>
             )}
           </div>
           <div className="tab-bar">
@@ -160,7 +160,7 @@ export default function DoctorDashboard() {
               <button key={t.id} className={`tab-btn ${tab === t.id ? "active" : ""}`} onClick={() => setTab(t.id)}>
                 {t.label}
                 {t.badge > 0 && (
-                  <span className="ml-1.5 bg-accent text-bg-secondary text-xs rounded-full w-5 h-5 inline-flex items-center justify-center font-bold">
+                  <span className="ml-1.5 bg-blue-600 text-white text-xs rounded-full w-5 h-5 inline-flex items-center justify-center font-bold">
                     {t.badge}
                   </span>
                 )}
@@ -171,12 +171,12 @@ export default function DoctorDashboard() {
 
         {/* Alerts */}
         {error && (
-          <div className="flex items-center gap-2 text-sm text-rose bg-rose/10 border border-rose/20 rounded-xl px-4 py-3 mb-4">
+          <div className="flex items-center gap-2 text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 mb-4">
             <span>⚠</span> {error}
           </div>
         )}
         {success && (
-          <div className="flex items-center gap-2 text-sm text-emerald bg-emerald/10 border border-emerald/20 rounded-xl px-4 py-3 mb-4">
+          <div className="flex items-center gap-2 text-sm text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-4">
             <span>✓</span> {success}
           </div>
         )}
@@ -185,7 +185,7 @@ export default function DoctorDashboard() {
         {tab === "appointments" && (
           <div className="animate-slide-up space-y-8">
             <section>
-              <h2 className="font-display font-semibold text-xl text-ink mb-4 flex items-center gap-2">
+              <h2 className="font-display font-semibold text-xl text-slate-900 mb-4 flex items-center gap-2">
                 <span className="glow-dot" /> Upcoming appointments
               </h2>
               <div className="space-y-4">
@@ -193,16 +193,16 @@ export default function DoctorDashboard() {
                   const summary = safeParseJSON(a.previsit_summary);
                   const isOpen = openId === a.id;
                   return (
-                    <div key={a.id} className="card p-5 hover:border-glass-border-light">
+                    <div key={a.id} className="card p-5 hover:border-slate-200-light">
                       <div className="flex items-start justify-between flex-wrap gap-2">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0"
                                style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.05))" }}>
-                            <span className="text-emerald">{a.patient_name?.[0]?.toUpperCase()}</span>
+                            <span className="text-emerald-600">{a.patient_name?.[0]?.toUpperCase()}</span>
                           </div>
                           <div>
-                            <p className="font-display font-bold text-ink">{a.patient_name}</p>
-                            <p className="text-ink-faint text-xs">📅 {a.appointment_date} at {a.start_time}</p>
+                            <p className="font-display font-bold text-slate-900">{a.patient_name}</p>
+                            <p className="text-slate-400 text-xs">📅 {a.appointment_date} at {a.start_time}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -213,29 +213,29 @@ export default function DoctorDashboard() {
 
                       {/* Pre-visit AI summary */}
                       {summary ? (
-                        <div className="mt-4 rounded-xl bg-glass border border-glass-border p-4 text-sm">
+                        <div className="mt-4 rounded-xl bg-white border border-slate-200 p-4 text-sm">
                           {a.previsit_llm_failed && (
-                            <p className="text-xs text-amber bg-amber/10 border border-amber/20 rounded-lg px-3 py-2 mb-3">
+                            <p className="text-xs text-amber-500 bg-amber-50 border border-amber/20 rounded-lg px-3 py-2 mb-3">
                               ⚠ AI summary unavailable — showing raw symptoms.
                             </p>
                           )}
                           <div className="grid sm:grid-cols-2 gap-3 mb-3">
                             <div>
-                              <p className="text-ink-faint text-xs mb-1">Chief complaint</p>
-                              <p className="text-ink font-medium">{summary.chief_complaint}</p>
+                              <p className="text-slate-400 text-xs mb-1">Chief complaint</p>
+                              <p className="text-slate-900 font-medium">{summary.chief_complaint}</p>
                             </div>
                             <div>
-                              <p className="text-ink-faint text-xs mb-1">Raw symptoms</p>
-                              <p className="text-ink-muted">{a.symptoms_text}</p>
+                              <p className="text-slate-400 text-xs mb-1">Raw symptoms</p>
+                              <p className="text-slate-500">{a.symptoms_text}</p>
                             </div>
                           </div>
                           {summary.suggested_questions?.length > 0 && (
                             <div>
-                              <p className="text-ink-faint text-xs mb-2">Suggested questions to ask patient</p>
+                              <p className="text-slate-400 text-xs mb-2">Suggested questions to ask patient</p>
                               <ul className="space-y-1">
                                 {summary.suggested_questions.map((q, i) => (
-                                  <li key={i} className="text-ink-muted flex gap-2">
-                                    <span className="text-accent text-xs mt-0.5">→</span> {q}
+                                  <li key={i} className="text-slate-500 flex gap-2">
+                                    <span className="text-blue-600 text-xs mt-0.5">→</span> {q}
                                   </li>
                                 ))}
                               </ul>
@@ -243,7 +243,7 @@ export default function DoctorDashboard() {
                           )}
                         </div>
                       ) : (
-                        <p className="text-xs text-ink-faint mt-3 italic">
+                        <p className="text-xs text-slate-400 mt-3 italic">
                           Patient hasn't submitted a symptom form yet.
                         </p>
                       )}
@@ -258,9 +258,9 @@ export default function DoctorDashboard() {
                           📝 Add post-visit notes
                         </button>
                       ) : (
-                        <div className="mt-4 border-t border-glass-border pt-4 space-y-4 animate-slide-up">
+                        <div className="mt-4 border-t border-slate-200 pt-4 space-y-4 animate-slide-up">
                           <div>
-                            <label className="label">Clinical notes <span className="text-rose">*</span></label>
+                            <label className="label">Clinical notes <span className="text-rose-600">*</span></label>
                             <textarea
                               id={`notes-${a.id}`}
                               className="input min-h-[100px] resize-none"
@@ -272,7 +272,7 @@ export default function DoctorDashboard() {
                           <div>
                             <label className="label">
                               Prescription
-                              <span className="normal-case font-normal text-ink-faint ml-1">
+                              <span className="normal-case font-normal text-slate-400 ml-1">
                                 (one per line — e.g. "Paracetamol 500mg – twice daily for 5 days")
                               </span>
                             </label>
@@ -303,25 +303,25 @@ export default function DoctorDashboard() {
                 {upcoming.length === 0 && (
                   <div className="card p-10 text-center">
                     <p className="text-4xl mb-3">🗓</p>
-                    <p className="text-ink-muted">No upcoming appointments.</p>
+                    <p className="text-slate-500">No upcoming appointments.</p>
                   </div>
                 )}
               </div>
             </section>
 
             <section>
-              <h2 className="font-display font-semibold text-xl text-ink mb-4">History</h2>
+              <h2 className="font-display font-semibold text-xl text-slate-900 mb-4">History</h2>
               <div className="space-y-2">
                 {past.map((a) => (
                   <div key={a.id} className="card p-4 flex items-center justify-between">
                     <div>
-                      <p className="font-semibold text-ink text-sm">{a.patient_name}</p>
-                      <p className="text-ink-faint text-xs">📅 {a.appointment_date} at {a.start_time}</p>
+                      <p className="font-semibold text-slate-900 text-sm">{a.patient_name}</p>
+                      <p className="text-slate-400 text-xs">📅 {a.appointment_date} at {a.start_time}</p>
                     </div>
                     <StatusBadge status={a.status} />
                   </div>
                 ))}
-                {past.length === 0 && <p className="text-ink-faint text-sm">No past appointments.</p>}
+                {past.length === 0 && <p className="text-slate-400 text-sm">No past appointments.</p>}
               </div>
             </section>
           </div>
@@ -330,7 +330,7 @@ export default function DoctorDashboard() {
         {/* ── Profile & Availability Tab ── */}
         {tab === "profile" && profileForm && (
           <div className="animate-slide-up max-w-2xl">
-            <h2 className="font-display font-semibold text-xl text-ink mb-5">Profile & Availability</h2>
+            <h2 className="font-display font-semibold text-xl text-slate-900 mb-5">Profile & Availability</h2>
             <div className="card p-6 space-y-5">
               {/* Working hours */}
               <div className="grid grid-cols-3 gap-4">
@@ -382,10 +382,9 @@ export default function DoctorDashboard() {
                         onClick={() => toggleDay(idx)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-150 ${
                           active
-                            ? "border-accent/60 text-bg-secondary shadow-glow-sm"
-                            : "bg-glass border-glass-border text-ink-muted hover:border-accent/30"
+                            ? "bg-blue-600 border-blue-600 text-white shadow-sm"
+                            : "bg-white border-slate-200 text-slate-500 hover:border-blue-200"
                         }`}
-                        style={active ? { background: "linear-gradient(135deg, #22d3ee, #14b8a6)" } : {}}
                       >
                         {label}
                       </button>
@@ -426,12 +425,12 @@ export default function DoctorDashboard() {
         {/* ── Leave Days Tab ── */}
         {tab === "leaves" && (
           <div className="animate-slide-up">
-            <h2 className="font-display font-semibold text-xl text-ink mb-5">My Leave Days</h2>
+            <h2 className="font-display font-semibold text-xl text-slate-900 mb-5">My Leave Days</h2>
             <div className="grid lg:grid-cols-2 gap-6">
               {/* Add leave form */}
               <div className="card p-5 space-y-4">
-                <h3 className="font-display font-semibold text-ink">Mark yourself unavailable</h3>
-                <p className="text-ink-faint text-xs">
+                <h3 className="font-display font-semibold text-slate-900">Mark yourself unavailable</h3>
+                <p className="text-slate-400 text-xs">
                   Adding a leave day will cancel any existing bookings on that date and notify affected patients.
                 </p>
                 <div>
@@ -446,7 +445,7 @@ export default function DoctorDashboard() {
                   />
                 </div>
                 <div>
-                  <label className="label">Reason <span className="normal-case font-normal text-ink-faint">(optional)</span></label>
+                  <label className="label">Reason <span className="normal-case font-normal text-slate-400">(optional)</span></label>
                   <input
                     id="leave-reason-input"
                     className="input"
@@ -472,23 +471,23 @@ export default function DoctorDashboard() {
 
               {/* Existing leaves */}
               <div>
-                <h3 className="font-display font-semibold text-ink mb-3">Scheduled leave days</h3>
+                <h3 className="font-display font-semibold text-slate-900 mb-3">Scheduled leave days</h3>
                 {leaves.length === 0 ? (
                   <div className="card p-8 text-center">
                     <p className="text-3xl mb-2">✅</p>
-                    <p className="text-ink-muted text-sm">No leave days scheduled.</p>
+                    <p className="text-slate-500 text-sm">No leave days scheduled.</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {leaves.map((l) => (
                       <div key={l.id} className="card p-4 flex items-center justify-between">
                         <div>
-                          <p className="font-semibold text-ink text-sm">📅 {l.leave_date}</p>
-                          {l.reason && <p className="text-ink-faint text-xs mt-0.5">{l.reason}</p>}
+                          <p className="font-semibold text-slate-900 text-sm">📅 {l.leave_date}</p>
+                          {l.reason && <p className="text-slate-400 text-xs mt-0.5">{l.reason}</p>}
                         </div>
                         <button
                           id={`remove-leave-${l.id}`}
-                          className="btn-ghost btn-sm text-rose hover:text-rose"
+                          className="btn-ghost btn-sm text-rose-600 hover:text-rose-600"
                           onClick={() => removeLeave(l.id)}
                         >
                           Remove
