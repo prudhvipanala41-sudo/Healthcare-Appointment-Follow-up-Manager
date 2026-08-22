@@ -41,20 +41,41 @@ from email.mime.text import MIMEText
 
 def _send_smtp(to_email: str, subject: str, body: str):
     cfg = current_app.config
+    resend_key = cfg.get("RESEND_API_KEY") or os.getenv("RESEND_API_KEY")
+
+    # 1. If RESEND_API_KEY is provided, use HTTPS API (Port 443 is never blocked on Render)
+    if resend_key:
+        import requests
+        resp = requests.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
+            json={
+                "from": "Sahayak Health <onboarding@resend.dev>",
+                "to": [to_email],
+                "subject": subject,
+                "text": body,
+            },
+            timeout=10,
+        )
+        if resp.status_code in (200, 201):
+            return True
+        else:
+            raise RuntimeError(f"Resend HTTP API error ({resp.status_code}): {resp.text}")
+
+    # 2. Otherwise use standard SMTP (works on local machine or hosts with open SMTP ports)
     username = cfg.get("MAIL_USERNAME")
     password = cfg.get("MAIL_PASSWORD")
     sender = cfg.get("MAIL_DEFAULT_SENDER") or username
     server = cfg.get("MAIL_SERVER", "smtp.gmail.com")
 
     if not username or not password:
-        raise RuntimeError("MAIL_USERNAME or MAIL_PASSWORD not configured")
+        raise RuntimeError("Neither RESEND_API_KEY nor MAIL_USERNAME/MAIL_PASSWORD is configured")
 
     msg = MIMEText(body)
     msg["Subject"] = subject
     msg["From"] = sender
     msg["To"] = to_email
 
-    # Try Port 465 (SSL) first as cloud hosts rarely block it, fallback to 587 (TLS)
     last_exc = None
     for port, is_ssl in [(465, True), (587, False)]:
         try:
