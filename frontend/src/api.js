@@ -11,7 +11,11 @@ api.interceptors.request.use((config) => {
 });
 
 export function errorMessage(err) {
+  if (err?.response?.status === 500) {
+    return "Unable to connect to clinical directory. Please try again in a moment.";
+  }
   return err?.response?.data?.error || err.message || "Something went wrong";
 }
+
 
 export default api;

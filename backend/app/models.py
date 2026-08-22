@@ -62,6 +62,7 @@ class DoctorProfile(db.Model):
     working_start = db.Column(db.String(5), nullable=False, default="09:00")  # HH:MM
     working_end = db.Column(db.String(5), nullable=False, default="17:00")
     working_days = db.Column(db.String(20), nullable=False, default="0,1,2,3,4")  # Mon=0 .. Sun=6
+    bio = db.Column(db.Text, default="")
     qualifications = db.Column(db.String(255), default="MBBS, MD")
     experience_years = db.Column(db.Integer, default=10)
     hospital_name = db.Column(db.String(255), default="City Multispeciality Hospital")
@@ -86,28 +87,29 @@ class DoctorProfile(db.Model):
             "user_id": self.user_id,
             "name": self.user.name if self.user else "",
             "email": self.user.email if self.user else "",
-            "specialisation": self.specialisation,
-            "slot_duration_minutes": self.slot_duration_minutes,
-            "working_start": self.working_start,
-            "working_end": self.working_end,
-            "working_days": self.working_days,
-            "bio": self.bio or "",
-            "qualifications": self.qualifications or "MBBS, MD",
-            "experience_years": self.experience_years or 10,
-            "hospital_name": self.hospital_name or "City Multispeciality Hospital",
-            "location": self.location or "Bengaluru",
-            "consultation_fee": self.consultation_fee or 800,
-            "consultation_mode": self.consultation_mode or "Online & In-Clinic",
-            "languages": self.languages or "English, Hindi",
-            "expertise": self.expertise or "",
-            "research_interests": self.research_interests or "",
-            "publications": self.publications or "",
-            "rating": round(float(self.rating or 4.8), 1),
-            "review_count": self.review_count or 45,
-            "verification_status": self.verification_status or "Verified Specialist",
-            "image_url": self.image_url or "",
-            "source_url": self.source_url or "",
+            "specialisation": getattr(self, "specialisation", "General Medicine"),
+            "slot_duration_minutes": getattr(self, "slot_duration_minutes", 20),
+            "working_start": getattr(self, "working_start", "09:00"),
+            "working_end": getattr(self, "working_end", "17:00"),
+            "working_days": getattr(self, "working_days", "0,1,2,3,4"),
+            "bio": getattr(self, "bio", "") or "",
+            "qualifications": getattr(self, "qualifications", "MBBS, MD") or "MBBS, MD",
+            "experience_years": getattr(self, "experience_years", 10) or 10,
+            "hospital_name": getattr(self, "hospital_name", "City Multispeciality Hospital") or "City Multispeciality Hospital",
+            "location": getattr(self, "location", "Bengaluru") or "Bengaluru",
+            "consultation_fee": getattr(self, "consultation_fee", 800) or 800,
+            "consultation_mode": getattr(self, "consultation_mode", "Online & In-Clinic") or "Online & In-Clinic",
+            "languages": getattr(self, "languages", "English, Hindi") or "English, Hindi",
+            "expertise": getattr(self, "expertise", "") or "",
+            "research_interests": getattr(self, "research_interests", "") or "",
+            "publications": getattr(self, "publications", "") or "",
+            "rating": round(float(getattr(self, "rating", 4.8) or 4.8), 1),
+            "review_count": getattr(self, "review_count", 45) or 45,
+            "verification_status": getattr(self, "verification_status", "Verified Specialist") or "Verified Specialist",
+            "image_url": getattr(self, "image_url", "") or "",
+            "source_url": getattr(self, "source_url", "") or "",
         }
+
 
 
 

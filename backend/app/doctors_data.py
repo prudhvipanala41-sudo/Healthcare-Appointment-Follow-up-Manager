@@ -1,8 +1,9 @@
 """
-Static clinical database for 18 multi-specialty verified doctors.
+Comprehensive clinical database for 22+ multi-specialty verified and demo doctors.
 """
 
 DOCTORS_DATA = [
+    # --- CARDIOLOGY ---
     {
         "name": "Dr. Vikram Sharma",
         "email": "dr.vikram@clinic.com",
@@ -28,6 +29,106 @@ DOCTORS_DATA = [
         "source_url": "https://sahayakhealth.org/specialists/cardiology/dr-vikram-sharma",
     },
     {
+        "name": "Dr. Priya Sundaram",
+        "email": "dr.priya.cardio@clinic.com",
+        "specialisation": "Cardiology",
+        "qualifications": "MBBS, MD (Medicine), DM (Cardiology), FSCAI",
+        "experience_years": 12,
+        "hospital_name": "Fortis Hospital, Cunningham Road",
+        "location": "Bengaluru",
+        "consultation_fee": 1100,
+        "consultation_mode": "Online & In-Clinic",
+        "languages": "English, Tamil, Kannada, Hindi",
+        "working_start": "10:00",
+        "working_end": "16:00",
+        "working_days": "0,1,2,3,4",
+        "slot_duration_minutes": 20,
+        "rating": 4.8,
+        "review_count": 142,
+        "verification_status": "Verified Specialist",
+        "bio": "Expert Clinical Cardiologist specializing in preventive cardiology, coronary artery disease management, arrhythmia detection, and non-invasive cardiac imaging.",
+        "expertise": "Preventive Cardiology, Arrhythmia, Lipid Management, 2D/3D Echo, Holter Monitoring",
+        "research_interests": "Early Cardiovascular Disease Risk Modeling in Young Adults",
+        "publications": "18 publications in Circulation and Indian Heart Journal.",
+        "source_url": "https://sahayakhealth.org/specialists/cardiology/dr-priya-sundaram",
+    },
+
+    # --- ONCOLOGY (Multiple Specialists) ---
+    {
+        "name": "Dr. Sanjay Deshmukh",
+        "email": "dr.sanjay@clinic.com",
+        "specialisation": "Oncology",
+        "qualifications": "MBBS, MD (Medicine), DM (Medical Oncology), ESMO Certified",
+        "experience_years": 20,
+        "hospital_name": "Tata Memorial Centre Affiliate, Parel",
+        "location": "Mumbai",
+        "consultation_fee": 1500,
+        "consultation_mode": "Online & In-Clinic",
+        "languages": "English, Hindi, Marathi",
+        "working_start": "11:00",
+        "working_end": "17:00",
+        "working_days": "0,1,2,3,4",
+        "slot_duration_minutes": 30,
+        "rating": 4.9,
+        "review_count": 190,
+        "verification_status": "Verified Specialist",
+        "bio": "Leading Medical Oncologist specializing in targeted immunotherapy, precision oncology, breast cancer, lung cancer therapeutics, and gastrointestinal malignancies.",
+        "expertise": "Targeted Immunotherapy, Chemotherapy Protocols, Breast Cancer, GI Malignancies, Genomic Oncology Testing",
+        "research_interests": "Molecular Biomarkers in Immunotherapy Resistance, Liquid Biopsies for Early Detection",
+        "publications": "50+ peer-reviewed papers in Lancet Oncology, Annals of Oncology, and Indian Journal of Cancer.",
+        "source_url": "https://sahayakhealth.org/specialists/oncology/dr-sanjay-deshmukh",
+    },
+    {
+        "name": "Dr. Radhika Madan",
+        "email": "dr.radhika.onco@clinic.com",
+        "specialisation": "Oncology",
+        "qualifications": "MBBS, MS (General Surgery), M.Ch (Surgical Oncology)",
+        "experience_years": 16,
+        "hospital_name": "Max Super Speciality Hospital, Vaishali",
+        "location": "Delhi",
+        "consultation_fee": 1400,
+        "consultation_mode": "In-Clinic",
+        "languages": "English, Hindi, Punjabi",
+        "working_start": "09:30",
+        "working_end": "15:30",
+        "working_days": "0,1,2,3,4,5",
+        "slot_duration_minutes": 25,
+        "rating": 4.9,
+        "review_count": 152,
+        "verification_status": "Verified Specialist",
+        "bio": "Consultant Surgical Oncologist with special interest in breast conservation surgery, robotic oncologic resections, gynecological cancers, and soft tissue sarcomas.",
+        "expertise": "Breast Oncoplastic Surgery, Minimally Invasive Cancer Surgery, Thyroid Oncology, Head & Neck Tumors",
+        "research_interests": "Sentinel Lymph Node Biopsy in Early-Stage Breast Cancer, Organ Preservation Protocols",
+        "publications": "28 publications in the World Journal of Surgical Oncology.",
+        "source_url": "https://sahayakhealth.org/specialists/oncology/dr-radhika-madan",
+    },
+    {
+        "name": "Dr. Vikramaditya Reddy",
+        "email": "dr.vikramaditya.onco@clinic.com",
+        "specialisation": "Oncology",
+        "qualifications": "MBBS, MD (Radiotherapy), DNB (Radiation Oncology), FASTRO",
+        "experience_years": 14,
+        "hospital_name": "Basavatarakam Indo-American Cancer Hospital",
+        "location": "Hyderabad",
+        "consultation_fee": 1300,
+        "consultation_mode": "Online & In-Clinic",
+        "languages": "English, Telugu, Hindi",
+        "working_start": "10:00",
+        "working_end": "16:00",
+        "working_days": "0,1,2,3,4",
+        "slot_duration_minutes": 20,
+        "rating": 4.8,
+        "review_count": 135,
+        "verification_status": "Verified Specialist",
+        "bio": "Senior Radiation Oncologist specializing in stereotactic body radiation therapy (SBRT), proton beam planning, IGRT/IMRT, and central nervous system tumors.",
+        "expertise": "Stereotactic Radiotherapy (SBRT/SRS), IMRT/IGRT, Brain Tumors, Prostate Cancer Radiation",
+        "research_interests": "AI-Driven Radiation Contouring and Dose Fractionation Optimization",
+        "publications": "22 papers in the International Journal of Radiation Oncology.",
+        "source_url": "https://sahayakhealth.org/specialists/oncology/dr-vikramaditya-reddy",
+    },
+
+    # --- NEUROLOGY ---
+    {
         "name": "Dr. Ananya Sen",
         "email": "dr.ananya@clinic.com",
         "specialisation": "Neurology",
@@ -51,6 +152,8 @@ DOCTORS_DATA = [
         "publications": "24 clinical papers in the Annals of Indian Academy of Neurology and Neurology India.",
         "source_url": "https://sahayakhealth.org/specialists/neurology/dr-ananya-sen",
     },
+
+    # --- ORTHOPEDICS ---
     {
         "name": "Dr. Rajesh Varma",
         "email": "dr.rajesh@clinic.com",
@@ -75,6 +178,8 @@ DOCTORS_DATA = [
         "publications": "40+ publications in the Journal of Bone and Joint Surgery and Indian Journal of Orthopaedics.",
         "source_url": "https://sahayakhealth.org/specialists/orthopedics/dr-rajesh-varma",
     },
+
+    # --- DERMATOLOGY ---
     {
         "name": "Dr. Karan Mehta",
         "email": "dr.karan@clinic.com",
@@ -99,6 +204,8 @@ DOCTORS_DATA = [
         "publications": "18 research papers in Indian Journal of Dermatology and Clinical Dermatology.",
         "source_url": "https://sahayakhealth.org/specialists/dermatology/dr-karan-mehta",
     },
+
+    # --- PEDIATRICS ---
     {
         "name": "Dr. Pooja Kulkarni",
         "email": "dr.pooja@clinic.com",
@@ -123,6 +230,8 @@ DOCTORS_DATA = [
         "publications": "15 publications in Indian Pediatrics and International Journal of Contemporary Pediatrics.",
         "source_url": "https://sahayakhealth.org/specialists/pediatrics/dr-pooja-kulkarni",
     },
+
+    # --- GYNECOLOGY ---
     {
         "name": "Dr. Meera Nambiar",
         "email": "dr.meera@clinic.com",
@@ -147,30 +256,8 @@ DOCTORS_DATA = [
         "publications": "22 clinical studies in the Journal of Obstetrics and Gynaecology of India.",
         "source_url": "https://sahayakhealth.org/specialists/gynecology/dr-meera-nambiar",
     },
-    {
-        "name": "Dr. Sanjay Deshmukh",
-        "email": "dr.sanjay@clinic.com",
-        "specialisation": "Oncology",
-        "qualifications": "MBBS, MD (Medicine), DM (Medical Oncology), ESMO Certified",
-        "experience_years": 20,
-        "hospital_name": "Tata Memorial Centre Affiliate, Parel",
-        "location": "Mumbai",
-        "consultation_fee": 1500,
-        "consultation_mode": "Online & In-Clinic",
-        "languages": "English, Hindi, Marathi",
-        "working_start": "11:00",
-        "working_end": "17:00",
-        "working_days": "0,1,2,3,4",
-        "slot_duration_minutes": 30,
-        "rating": 4.9,
-        "review_count": 160,
-        "verification_status": "Verified Specialist",
-        "bio": "Leading Medical Oncologist specializing in targeted immunotherapy, precision oncology, breast cancer, lung cancer therapeutics, and gastrointestinal malignancies.",
-        "expertise": "Targeted Immunotherapy, Chemotherapy Protocols, Breast Cancer, GI Malignancies, Genomic Oncology Testing",
-        "research_interests": "Molecular Biomarkers in Immunotherapy Resistance, Liquid Biopsies for Early Detection",
-        "publications": "50+ peer-reviewed papers in Lancet Oncology, Annals of Oncology, and Indian Journal of Cancer.",
-        "source_url": "https://sahayakhealth.org/specialists/oncology/dr-sanjay-deshmukh",
-    },
+
+    # --- PSYCHIATRY ---
     {
         "name": "Dr. Rohan Kapoor",
         "email": "dr.rohan@clinic.com",
@@ -195,6 +282,8 @@ DOCTORS_DATA = [
         "publications": "14 articles in the Indian Journal of Psychiatry and British Journal of Psychiatry.",
         "source_url": "https://sahayakhealth.org/specialists/psychiatry/dr-rohan-kapoor",
     },
+
+    # --- GASTROENTEROLOGY ---
     {
         "name": "Dr. Alok Trivedi",
         "email": "dr.alok@clinic.com",
@@ -219,6 +308,8 @@ DOCTORS_DATA = [
         "publications": "28 publications in the American Journal of Gastroenterology and Tropical Gastroenterology.",
         "source_url": "https://sahayakhealth.org/specialists/gastroenterology/dr-alok-trivedi",
     },
+
+    # --- PULMONOLOGY ---
     {
         "name": "Dr. Sunita Banerjee",
         "email": "dr.sunita@clinic.com",
@@ -243,6 +334,8 @@ DOCTORS_DATA = [
         "publications": "19 research papers in Lung India and European Respiratory Journal Open.",
         "source_url": "https://sahayakhealth.org/specialists/pulmonology/dr-sunita-banerjee",
     },
+
+    # --- GENERAL MEDICINE ---
     {
         "name": "Dr. Asha Rao",
         "email": "dr.asha@clinic.com",
@@ -267,6 +360,8 @@ DOCTORS_DATA = [
         "publications": "12 clinical papers in Journal of Association of Physicians of India (JAPI).",
         "source_url": "https://sahayakhealth.org/specialists/general-medicine/dr-asha-rao",
     },
+
+    # --- ENDOCRINOLOGY ---
     {
         "name": "Dr. Harish Patel",
         "email": "dr.harish@clinic.com",
@@ -291,6 +386,8 @@ DOCTORS_DATA = [
         "publications": "21 publications in Indian Journal of Endocrinology and Metabolism and Diabetes Care.",
         "source_url": "https://sahayakhealth.org/specialists/endocrinology/dr-harish-patel",
     },
+
+    # --- OPHTHALMOLOGY ---
     {
         "name": "Dr. Divya Rangarajan",
         "email": "dr.divya@clinic.com",
@@ -315,6 +412,8 @@ DOCTORS_DATA = [
         "publications": "17 papers in the Indian Journal of Ophthalmology and British Journal of Ophthalmology.",
         "source_url": "https://sahayakhealth.org/specialists/ophthalmology/dr-divya-rangarajan",
     },
+
+    # --- ENT ---
     {
         "name": "Dr. Pradeep Iyer",
         "email": "dr.pradeep@clinic.com",
@@ -339,6 +438,8 @@ DOCTORS_DATA = [
         "publications": "16 clinical articles in Indian Journal of Otolaryngology and Head & Neck Surgery.",
         "source_url": "https://sahayakhealth.org/specialists/ent/dr-pradeep-iyer",
     },
+
+    # --- UROLOGY ---
     {
         "name": "Dr. Tarun Saxena",
         "email": "dr.tarun@clinic.com",
@@ -363,6 +464,8 @@ DOCTORS_DATA = [
         "publications": "31 publications in the Indian Journal of Urology and Journal of Endourology.",
         "source_url": "https://sahayakhealth.org/specialists/urology/dr-tarun-saxena",
     },
+
+    # --- RHEUMATOLOGY ---
     {
         "name": "Dr. Kavita Nair",
         "email": "dr.kavita@clinic.com",
@@ -387,6 +490,8 @@ DOCTORS_DATA = [
         "publications": "14 papers in Indian Journal of Rheumatology and Arthritis Care & Research.",
         "source_url": "https://sahayakhealth.org/specialists/rheumatology/dr-kavita-nair",
     },
+
+    # --- NEPHROLOGY ---
     {
         "name": "Dr. Arvind Singhal",
         "email": "dr.arvind@clinic.com",
@@ -411,6 +516,8 @@ DOCTORS_DATA = [
         "publications": "38 papers in Indian Journal of Nephrology and Kidney International Reports.",
         "source_url": "https://sahayakhealth.org/specialists/nephrology/dr-arvind-singhal",
     },
+
+    # --- PLASTIC SURGERY ---
     {
         "name": "Dr. Neha Agarwal",
         "email": "dr.neha@clinic.com",

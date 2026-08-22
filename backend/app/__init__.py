@@ -53,8 +53,10 @@ def create_app(config_object=Config):
         from sqlalchemy import text
         dialect = db.engine.dialect.name
         columns = [
+            ("doctor_profiles", "bio", "TEXT DEFAULT ''"),
             ("doctor_profiles", "qualifications", "VARCHAR(255) DEFAULT 'MBBS, MD'"),
             ("doctor_profiles", "experience_years", "INTEGER DEFAULT 10"),
+
             ("doctor_profiles", "hospital_name", "VARCHAR(255) DEFAULT 'City Multispeciality Hospital'"),
             ("doctor_profiles", "location", "VARCHAR(100) DEFAULT 'Bengaluru'"),
             ("doctor_profiles", "consultation_fee", "INTEGER DEFAULT 800"),
