@@ -27,11 +27,18 @@ MAX_ATTEMPTS = 5
 
 
 def queue_and_send_email(to_email: str, subject: str, body: str, category: str):
-    log = EmailLog(to_email=to_email, subject=subject, body=body, category=category, status="pending")
+    # Route fake demo accounts (@demo.com, @clinic.com) to the real MAIL_USERNAME so emails land in your inbox!
+    target_email = to_email
+    mail_user = current_app.config.get("MAIL_USERNAME")
+    if mail_user and ("@demo.com" in to_email or "@clinic.com" in to_email or "@example.com" in to_email):
+        target_email = mail_user
+
+    log = EmailLog(to_email=target_email, subject=subject, body=body, category=category, status="pending")
     db.session.add(log)
     db.session.commit()
     _attempt_send(log)
     return log
+
 
 
 import smtplib
