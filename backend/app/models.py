@@ -27,6 +27,43 @@ class AppointmentStatus(str, enum.Enum):
     CANCELLED_BY_LEAVE = "cancelled_by_leave"
 
 
+from sqlalchemy.types import TypeDecorator, String as SAString
+
+
+class AppointmentStatusType(TypeDecorator):
+    """Handles both 'PENDING' (pg native enum name) and 'pending' (value) stored in DB."""
+    impl = SAString(50)
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if isinstance(value, AppointmentStatus):
+            # Always store the UPPERCASE name so PostgreSQL ENUM accepts it
+            return value.name
+        # Plain string — normalise
+        s = str(value).upper()
+        try:
+            return AppointmentStatus[s].name
+        except KeyError:
+            try:
+                return AppointmentStatus(str(value).lower()).name
+            except ValueError:
+                return s
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        # Try by name first (e.g. 'PENDING'), then by value (e.g. 'pending')
+        try:
+            return AppointmentStatus[value.upper()]
+        except KeyError:
+            try:
+                return AppointmentStatus(value.lower())
+            except ValueError:
+                return AppointmentStatus.PENDING  # safe default
+
+
 class Urgency(str, enum.Enum):
     LOW = "Low"
     MEDIUM = "Medium"
@@ -146,7 +183,7 @@ class Appointment(db.Model):
     start_time = db.Column(db.String(5), nullable=False)  # HH:MM
     end_time = db.Column(db.String(5), nullable=False)
 
-    status = db.Column(db.Enum(AppointmentStatus), default=AppointmentStatus.PENDING, nullable=False)
+    status = db.Column(AppointmentStatusType, default=AppointmentStatus.PENDING, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Pre-visit
