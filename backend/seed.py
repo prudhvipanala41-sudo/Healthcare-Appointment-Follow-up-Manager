@@ -14,7 +14,13 @@ app = create_app()
 
 with app.app_context():
     if User.query.filter_by(email="admin@clinic.com").first():
-        print("Seed data already present, skipping.")
+        print("Seed data already present, skipping full seed.")
+        # Migrate old demo patient email to real Gmail if needed
+        old_patient = User.query.filter_by(email="patient@demo.com").first()
+        if old_patient:
+            old_patient.email = "prudhvipanala41@gmail.com"
+            db.session.commit()
+            print("Migrated demo patient email to prudhvipanala41@gmail.com")
     else:
         admin = User(name="Clinic Admin", email="admin@clinic.com", role=Role.ADMIN)
         admin.set_password("Admin@123")
@@ -48,4 +54,4 @@ with app.app_context():
         print("Seeded: admin@clinic.com / Admin@123")
         print("        dr.asha@clinic.com / Doctor@123")
         print("        dr.karan@clinic.com / Doctor@123")
-        print("        patient@demo.com / Patient@123")
+        print("        prudhvipanala41@gmail.com / Patient@123")
