@@ -32,12 +32,15 @@ def queue_and_send_email(to_email: str, subject: str, body: str, category: str):
     mail_user = current_app.config.get("MAIL_USERNAME")
     if mail_user and ("@demo.com" in to_email or "@clinic.com" in to_email or "@example.com" in to_email):
         target_email = mail_user
+        logger.info("Routing demo email recipient %s -> verified inbox %s", to_email, target_email)
 
     log = EmailLog(to_email=target_email, subject=subject, body=body, category=category, status="pending")
     db.session.add(log)
     db.session.commit()
+    logger.info("Dispatched email log #%s to %s (Subject: '%s', Category: %s)", log.id, target_email, subject, category)
     _attempt_send(log)
     return log
+
 
 
 
@@ -115,11 +118,13 @@ def _attempt_send(log: EmailLog):
         _send_smtp(log.to_email, log.subject, log.body)
         log.status = "sent"
         log.last_error = None
+        logger.info("Email #%s successfully sent to %s (Subject: '%s')", log.id, log.to_email, log.subject)
     except Exception as exc:
         log.status = "failed"
         log.last_error = str(exc)
-        logger.warning("Email send failed (attempt %s) to %s: %s", log.attempts, log.to_email, exc)
+        logger.error("Email #%s send failed (attempt %s) to %s: %s", log.id, log.attempts, log.to_email, exc)
     db.session.commit()
+
 
 
 def retry_failed_emails(app):
