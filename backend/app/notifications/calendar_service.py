@@ -27,23 +27,26 @@ logger = logging.getLogger(__name__)
 def _credentials_for(calendar_token):
     if not calendar_token:
         return None
+    r_token = calendar_token.refresh_token if calendar_token.refresh_token and calendar_token.refresh_token != "access_only" else None
     creds = Credentials(
         token=calendar_token.access_token,
-        refresh_token=calendar_token.refresh_token,
+        refresh_token=r_token,
         token_uri="https://oauth2.googleapis.com/token",
         client_id=current_app.config["GOOGLE_CLIENT_ID"],
         client_secret=current_app.config["GOOGLE_CLIENT_SECRET"],
         scopes=["https://www.googleapis.com/auth/calendar.events"],
     )
     if not creds.valid:
-        try:
-            creds.refresh(GoogleRequest())
-            calendar_token.access_token = creds.token
-            db.session.commit()
-        except Exception as exc:
-            logger.warning("Could not refresh Google token for user %s: %s", calendar_token.user_id, exc)
-            return None
+        if creds.refresh_token:
+            try:
+                creds.refresh(GoogleRequest())
+                calendar_token.access_token = creds.token
+                db.session.commit()
+            except Exception as exc:
+                logger.warning("Could not refresh Google token for user %s: %s", calendar_token.user_id, exc)
+                return None
     return creds
+
 
 
 def _service_for(user):
