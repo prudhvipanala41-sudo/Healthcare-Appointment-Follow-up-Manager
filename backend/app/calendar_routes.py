@@ -19,17 +19,25 @@ bp = Blueprint("calendar", __name__, url_prefix="/api/calendar")
 SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 
 
+def _get_redirect_uri():
+    """Always construct the redirect URI from the actual incoming request host.
+    This makes it work correctly on any deployment (local, Render, etc.)
+    without relying on environment variables."""
+    return request.host_url.rstrip("/") + "/api/calendar/oauth2callback"
+
+
 def _flow():
+    redirect_uri = _get_redirect_uri()
     client_config = {
         "web": {
             "client_id": current_app.config["GOOGLE_CLIENT_ID"],
             "client_secret": current_app.config["GOOGLE_CLIENT_SECRET"],
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": "https://oauth2.googleapis.com/token",
-            "redirect_uris": [current_app.config["GOOGLE_REDIRECT_URI"]],
+            "redirect_uris": [redirect_uri],
         }
     }
-    return Flow.from_client_config(client_config, scopes=SCOPES, redirect_uri=current_app.config["GOOGLE_REDIRECT_URI"])
+    return Flow.from_client_config(client_config, scopes=SCOPES, redirect_uri=redirect_uri)
 
 
 @bp.get("/connect")
