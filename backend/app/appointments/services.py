@@ -48,16 +48,29 @@ def _parse_hm(hm: str) -> time:
 def generate_available_slots(doctor: DoctorProfile, target_date: date):
     """Returns list of 'HH:MM' start times still open on target_date."""
     weekday = target_date.weekday()
-    if str(weekday) not in doctor.working_days.split(","):
+    working_days = doctor.working_days or "0,1,2,3,4,5,6"
+    if str(weekday) not in working_days.split(","):
         return []
 
     is_on_leave = DoctorLeave.query.filter_by(doctor_id=doctor.id, leave_date=target_date).first()
     if is_on_leave:
         return []
 
-    start = datetime.combine(target_date, _parse_hm(doctor.working_start))
-    end = datetime.combine(target_date, _parse_hm(doctor.working_end))
-    step = timedelta(minutes=doctor.slot_duration_minutes)
+    working_start = doctor.working_start or "09:00"
+    working_end = doctor.working_end or "17:00"
+    duration = doctor.slot_duration_minutes or 20
+    if duration <= 0:
+        duration = 20
+
+    try:
+        start = datetime.combine(target_date, _parse_hm(working_start))
+        end = datetime.combine(target_date, _parse_hm(working_end))
+    except Exception as e:
+        logger.error(f"Error parsing working hours for doctor {doctor.id}: {e}")
+        start = datetime.combine(target_date, time(9, 0))
+        end = datetime.combine(target_date, time(17, 0))
+
+    step = timedelta(minutes=duration)
 
     booked = {
         a.start_time
