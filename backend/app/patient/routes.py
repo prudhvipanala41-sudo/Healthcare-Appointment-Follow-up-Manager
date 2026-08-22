@@ -27,36 +27,38 @@ def debug_enum():
 
 @bp.get("/migrate_enum")
 def migrate_enum():
-    from app.extensions import db
     from sqlalchemy import text
     try:
-        res = db.session.execute(text("SELECT enumlabel FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE typname = 'appointmentstatus';"))
-        labels = [row[0] for row in res]
-        
+        with db.engine.connect() as conn:
+            res = conn.execute(text("SELECT enumlabel FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE typname = 'appointmentstatus';"))
+            labels = [row[0] for row in res]
+
         new_values = [
             "PENDING", "CONFIRMED", "REJECTED", "CANCELLED", "COMPLETED", "RESCHEDULED",
             "pending", "confirmed", "rejected", "cancelled", "completed", "rescheduled"
         ]
-        
+
         added = []
         errors = []
         for val in new_values:
             if val not in labels:
-                db.session.commit()
-                connection = db.engine.raw_connection()
-                connection.set_isolation_level(0)
-                cursor = connection.cursor()
                 try:
-                    cursor.execute(f"ALTER TYPE appointmentstatus ADD VALUE '{val}';")
+                    # ALTER TYPE must run outside a transaction — use execution_options autocommit
+                    with db.engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+                        conn.execute(text(f"ALTER TYPE appointmentstatus ADD VALUE IF NOT EXISTS '{val}';"))
                     added.append(val)
                 except Exception as e:
-                    errors.append(str(e))
-                finally:
-                    cursor.close()
-                    connection.close()
-        return jsonify({"added": added, "errors": errors, "labels": labels})
+                    errors.append(f"{val}: {str(e)}")
+
+        # Refresh label list after changes
+        with db.engine.connect() as conn:
+            res = conn.execute(text("SELECT enumlabel FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE typname = 'appointmentstatus';"))
+            labels_after = [row[0] for row in res]
+
+        return jsonify({"added": added, "errors": errors, "before": labels, "after": labels_after})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        import traceback
+        return jsonify({"error": str(e), "traceback": traceback.format_exc()}), 500
 
 
 @bp.get("/doctors")
