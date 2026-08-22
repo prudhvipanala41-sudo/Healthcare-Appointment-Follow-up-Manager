@@ -19,6 +19,20 @@ bp = Blueprint("calendar", __name__, url_prefix="/api/calendar")
 SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 
 
+@bp.get("/debug-redirect")
+def debug_redirect():
+    """Temporary debug endpoint - shows exactly what redirect URI would be sent to Google."""
+    host = request.host
+    scheme = "http" if ("localhost" in host or "127.0.0.1" in host) else "https"
+    auto_detected = f"{scheme}://{host}/api/calendar/oauth2callback"
+    return jsonify({
+        "request_host": request.host,
+        "request_host_url": request.host_url,
+        "auto_detected_redirect_uri": auto_detected,
+        "configured_redirect_uri": current_app.config.get("GOOGLE_REDIRECT_URI"),
+    })
+
+
 def _get_redirect_uri():
     """Construct redirect URI from the actual request host.
     Always use https:// in production (Render terminates TLS at the proxy)."""
