@@ -35,28 +35,35 @@ def debug_redirect():
 
 @bp.get("/test-email")
 def test_email():
-    """Temporary debug endpoint - sends a test email and returns success/error."""
-    from flask_mail import Message
-    from app.extensions import mail
-    cfg = current_app.config
-    result = {
-        "MAIL_SERVER": cfg.get("MAIL_SERVER"),
-        "MAIL_PORT": cfg.get("MAIL_PORT"),
-        "MAIL_USE_TLS": cfg.get("MAIL_USE_TLS"),
-        "MAIL_USERNAME": cfg.get("MAIL_USERNAME"),
-        "MAIL_PASSWORD_SET": bool(cfg.get("MAIL_PASSWORD")),
-    }
+    """Debug endpoint - tests email sending and shows exact config and error."""
     try:
+        from flask_mail import Message
+        from app.extensions import mail
+        cfg = current_app.config
+        username = cfg.get("MAIL_USERNAME") or ""
+        password = cfg.get("MAIL_PASSWORD") or ""
+        result = {
+            "MAIL_SERVER": cfg.get("MAIL_SERVER"),
+            "MAIL_PORT": cfg.get("MAIL_PORT"),
+            "MAIL_USE_TLS": cfg.get("MAIL_USE_TLS"),
+            "MAIL_USERNAME": username,
+            "MAIL_PASSWORD_SET": bool(password),
+            "MAIL_DEFAULT_SENDER": cfg.get("MAIL_DEFAULT_SENDER"),
+        }
+        if not username:
+            result["status"] = "FAILED"
+            result["error"] = "MAIL_USERNAME is not set in environment variables!"
+            return jsonify(result)
         msg = Message(
             subject="Sahayak Health - Test Email",
-            recipients=[cfg.get("MAIL_USERNAME", "")],
-            body="This is a test email from your Sahayak Health app. If you received this, email is working!"
+            sender=username,
+            recipients=[username],
+            body="Test email from Sahayak Health. If you see this, email is working!"
         )
         mail.send(msg)
-        result["status"] = "SUCCESS - email sent!"
+        result["status"] = "SUCCESS - email sent to " + username
     except Exception as exc:
-        result["status"] = "FAILED"
-        result["error"] = str(exc)
+        result = {"status": "FAILED", "error": str(exc), "type": type(exc).__name__}
     return jsonify(result)
 
 
