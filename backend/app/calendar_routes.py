@@ -37,8 +37,7 @@ def debug_redirect():
 def test_email():
     """Debug endpoint - tests email sending and shows exact config and error."""
     try:
-        from flask_mail import Message
-        from app.extensions import mail
+        from app.notifications.email_service import _send_smtp
         cfg = current_app.config
         username = cfg.get("MAIL_USERNAME") or ""
         password = cfg.get("MAIL_PASSWORD") or ""
@@ -54,17 +53,17 @@ def test_email():
             result["status"] = "FAILED"
             result["error"] = "MAIL_USERNAME is not set in environment variables!"
             return jsonify(result)
-        msg = Message(
-            subject="Sahayak Health - Test Email",
-            sender=username,
-            recipients=[username],
-            body="Test email from Sahayak Health. If you see this, email is working!"
+
+        _send_smtp(
+            username,
+            "Sahayak Health - Test Email",
+            "This is a test email from Sahayak Health! If you received this, your email configuration is 100% working!"
         )
-        mail.send(msg)
         result["status"] = "SUCCESS - email sent to " + username
     except Exception as exc:
         result = {"status": "FAILED", "error": str(exc), "type": type(exc).__name__}
     return jsonify(result)
+
 
 
 def _get_redirect_uri():

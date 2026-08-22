@@ -34,13 +34,53 @@ def queue_and_send_email(to_email: str, subject: str, body: str, category: str):
     return log
 
 
+import smtplib
+import socket
+from email.mime.text import MIMEText
+
+
+def _send_smtp(to_email: str, subject: str, body: str):
+    cfg = current_app.config
+    username = cfg.get("MAIL_USERNAME")
+    password = cfg.get("MAIL_PASSWORD")
+    sender = cfg.get("MAIL_DEFAULT_SENDER") or username
+    server = cfg.get("MAIL_SERVER", "smtp.gmail.com")
+
+    if not username or not password:
+        raise RuntimeError("MAIL_USERNAME or MAIL_PASSWORD not configured")
+
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = sender
+    msg["To"] = to_email
+
+    # Try Port 465 (SSL) first as cloud hosts rarely block it, fallback to 587 (TLS)
+    last_exc = None
+    for port, is_ssl in [(465, True), (587, False)]:
+        try:
+            if is_ssl:
+                with smtplib.SMTP_SSL(server, port, timeout=10) as s:
+                    s.login(username, password)
+                    s.send_message(msg)
+                    return True
+            else:
+                with smtplib.SMTP(server, port, timeout=10) as s:
+                    s.starttls()
+                    s.login(username, password)
+                    s.send_message(msg)
+                    return True
+        except Exception as exc:
+            last_exc = exc
+            logger.warning("SMTP attempt on port %s failed: %s", port, exc)
+
+    if last_exc:
+        raise last_exc
+
+
 def _attempt_send(log: EmailLog):
     log.attempts += 1
     try:
-        if not current_app.config.get("MAIL_USERNAME"):
-            raise RuntimeError("MAIL_USERNAME not configured")
-        msg = Message(subject=log.subject, recipients=[log.to_email], body=log.body)
-        mail.send(msg)
+        _send_smtp(log.to_email, log.subject, log.body)
         log.status = "sent"
         log.last_error = None
     except Exception as exc:
