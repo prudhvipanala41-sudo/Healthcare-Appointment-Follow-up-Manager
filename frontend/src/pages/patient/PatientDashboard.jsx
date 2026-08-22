@@ -1,583 +1,331 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import NavBar from "../../components/NavBar";
-import api, { errorMessage } from "../../api";
-import StatusBadge from "../../components/StatusBadge";
-import UrgencyBadge from "../../components/UrgencyBadge";
-import BookingModal from "./BookingModal";
-import DoctorProfileModal from "./DoctorProfileModal";
+import api from "../../api";
 import { useAuth } from "../../AuthContext";
+import DoctorProfileModal from "./DoctorProfileModal";
+import BookingModal from "./BookingModal";
 
-function safeParseJSON(str) {
-  if (!str) return null;
-  try {
-    const v = typeof str === "string" ? JSON.parse(str) : str;
-    return typeof v === "object" && v !== null ? v : null;
-  } catch {
-    return null;
-  }
-}
-
-const SPECIALTY_OPTIONS = [
-  "All",
-  "Cardiology",
-  "Neurology",
-  "Orthopedics",
-  "Dermatology",
-  "Pediatrics",
-  "Gynecology & Obstetrics",
-  "Oncology",
-  "Psychiatry",
-  "Gastroenterology",
-  "Pulmonology",
-  "General Medicine",
-  "Endocrinology",
-  "Ophthalmology",
-  "ENT (Otolaryngology)",
-  "Urology",
-  "Rheumatology",
-  "Nephrology",
-  "Plastic & Reconstructive Surgery",
+const SPECIALTIES = [
+  { name: "Cardiology", icon: "❤️" },
+  { name: "Neurology", icon: "🧠" },
+  { name: "Orthopedics", icon: "🦴" },
+  { name: "Dermatology", icon: "🧴" },
+  { name: "Pediatrics", icon: "👶" },
+  { name: "Gynecology", icon: "🤰" },
+  { name: "Oncology", icon: "🎗" },
+  { name: "Psychiatry", icon: "🧠" },
 ];
 
-const LOCATION_OPTIONS = [
-  "All",
-  "Bengaluru",
-  "Hyderabad",
-  "Mumbai",
-  "Delhi",
-  "Chennai",
-  "Kolkata",
-  "Ahmedabad",
+const TOP_HOSPITALS = [
+  { name: "Apollo Hospitals", city: "Hyderabad", rating: 4.8, reviews: 1240, img: "🏥", tags: ["Cardiology", "Oncology"] },
+  { name: "Fortis Healthcare", city: "Mumbai", rating: 4.7, reviews: 980, img: "🏥", tags: ["Neurology", "Orthopedics"] },
+  { name: "Max Super Speciality", city: "Delhi", rating: 4.9, reviews: 2100, img: "🏥", tags: ["General", "Emergency"] },
 ];
 
 export default function PatientDashboard() {
   const { user } = useAuth();
-  const [tab, setTab] = useState("book");
-  const [doctors, setDoctors] = useState([]);
-  const [search, setSearch] = useState("");
-  const [selectedSpecialty, setSelectedSpecialty] = useState("All");
-  const [selectedLocation, setSelectedLocation] = useState("All");
-  const [selectedMode, setSelectedMode] = useState("All");
-  const [sortBy, setSortBy] = useState("rating");
-
-  const [appointments, setAppointments] = useState([]);
-  const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [topDoctors, setTopDoctors] = useState([]);
+  const [journey, setJourney] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  // Modals
   const [viewingDoctor, setViewingDoctor] = useState(null);
-  const [error, setError] = useState("");
-  const [symptomDraft, setSymptomDraft] = useState({});
-  const [loadingDoctors, setLoadingDoctors] = useState(false);
-  const [loadingAppts, setLoadingAppts] = useState(false);
+  const [bookingDoctor, setBookingDoctor] = useState(null);
 
-  const loadDoctors = useCallback(async () => {
-    setLoadingDoctors(true);
-    setError("");
-    try {
-      const params = {
-        search: search.trim() || undefined,
-        specialisation: selectedSpecialty !== "All" ? selectedSpecialty : undefined,
-        location: selectedLocation !== "All" ? selectedLocation : undefined,
-        mode: selectedMode !== "All" ? selectedMode : undefined,
-        sort_by: sortBy,
-      };
-      const res = await api.get("/api/patient/doctors", { params });
-      setDoctors(res.data);
-    } catch (err) {
-      setError(errorMessage(err));
-    } finally {
-      setLoadingDoctors(false);
+  useEffect(() => {
+    async function load() {
+      try {
+        const [docRes, journeyRes] = await Promise.all([
+          api.get("/api/patient/doctors"),
+          api.get("/api/patient/journey")
+        ]);
+        setTopDoctors(docRes.data.slice(0, 4));
+        setJourney(journeyRes.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     }
-  }, [search, selectedSpecialty, selectedLocation, selectedMode, sortBy]);
-
-  const loadAppointments = useCallback(async () => {
-    setLoadingAppts(true);
-    try {
-      const res = await api.get("/api/patient/appointments");
-      setAppointments(res.data);
-    } catch (err) {
-      setError(errorMessage(err));
-    } finally {
-      setLoadingAppts(false);
-    }
+    load();
   }, []);
 
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      loadDoctors();
-    }, 250);
-    return () => clearTimeout(debounceTimer);
-  }, [loadDoctors]);
-
-  useEffect(() => {
-    if (tab === "appointments") loadAppointments();
-  }, [tab, loadAppointments]);
-
-  async function submitSymptoms(appointmentId) {
-    const text = symptomDraft[appointmentId];
-    if (!text?.trim()) return;
-    try {
-      await api.post(`/api/patient/appointments/${appointmentId}/symptoms`, { symptoms: text });
-      await loadAppointments();
-      setSymptomDraft((d) => { const n = {...d}; delete n[appointmentId]; return n; });
-    } catch (err) {
-      setError(errorMessage(err));
-    }
-  }
-
-  async function cancelAppointment(id) {
-    if (!confirm("Cancel this appointment?")) return;
-    try {
-      await api.post(`/api/patient/appointments/${id}/cancel`);
-      await loadAppointments();
-    } catch (err) {
-      setError(errorMessage(err));
-    }
-  }
-
-  // Stats
-  const booked = appointments.filter((a) => a.status === "booked").length;
-  const completed = appointments.filter((a) => a.status === "completed").length;
-  const cancelled = appointments.filter((a) => a.status.startsWith("cancelled")).length;
+  const firstName = user?.name?.split(" ")[0] || "Patient";
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-slate-50 font-body pb-20">
       <NavBar />
-      <main className="max-w-6xl mx-auto px-5 py-8 animate-fade-in">
-        {/* Header */}
-        <div className="flex items-start justify-between flex-wrap gap-4 mb-8">
-          <div>
-            <h1 className="font-display font-bold text-3xl text-slate-900">
-              Hello, <span className="text-gradient">{user?.name?.split(" ")[0]}</span> 👋
-            </h1>
-            <p className="text-slate-500 text-sm mt-1">Find top-rated specialists, research their clinical background, and book instant slots.</p>
-          </div>
-          <div className="tab-bar">
-            <button
-              className={`tab-btn ${tab === "book" ? "active" : ""}`}
-              onClick={() => setTab("book")}
-            >
-              🔍 Specialist Directory
-            </button>
-            <button
-              className={`tab-btn ${tab === "appointments" ? "active" : ""}`}
-              onClick={() => setTab("appointments")}
-            >
-              📋 My Appointments
-              {booked > 0 && (
-                <span className="ml-1.5 bg-blue-600 text-white text-xs rounded-full w-5 h-5 inline-flex items-center justify-center font-bold">
-                  {booked}
-                </span>
-              )}
-            </button>
+      
+      {/* 1. HERO SECTION */}
+      <section className="bg-white border-b border-slate-200 pt-10 pb-16 relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-blue-50 rounded-full blur-3xl opacity-60"></div>
+        <div className="max-w-7xl mx-auto px-5 relative z-10">
+          <h1 className="text-4xl font-display font-bold text-slate-900 tracking-tight mb-3 animate-slide-up">
+            Good morning, {firstName} 👋
+          </h1>
+          <p className="text-lg text-slate-600 mb-8 animate-slide-up" style={{ animationDelay: "100ms" }}>
+            Find the right specialist for your healthcare needs.
+          </p>
+          
+          <div className="max-w-3xl relative animate-slide-up" style={{ animationDelay: "200ms" }}>
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input 
+              type="text" 
+              className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-300 shadow-lg shadow-slate-200/50 text-slate-900 placeholder-slate-400 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-lg transition-all"
+              placeholder="Search doctors, hospitals, specialties or conditions..."
+              onClick={() => { /* Navigation handled via quick actions below for now */ }}
+            />
           </div>
         </div>
+      </section>
 
-        {/* Stats row */}
-        {tab === "appointments" && appointments.length > 0 && (
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            {[
-              { label: "Upcoming", value: booked,    icon: "📅", color: "text-blue-600",   bg: "bg-blue-50 border border-blue-100" },
-              { label: "Completed", value: completed, icon: "✅", color: "text-emerald-600",  bg: "bg-emerald-50 border border-emerald-100" },
-              { label: "Cancelled", value: cancelled, icon: "❌", color: "text-rose-600",     bg: "bg-rose-50 border border-rose-100" },
-            ].map((s) => (
-              <div key={s.label} className={`card p-4  ${s.bg} flex items-center gap-3`}>
-                <span className="text-2xl">{s.icon}</span>
-                <div>
-                  <p className={`font-display font-bold text-2xl ${s.color}`}>{s.value}</p>
-                  <p className="text-slate-400 text-xs">{s.label}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {error && (
-          <div className="flex items-center gap-2 text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 mb-4">
-            <span>⚠</span> {error}
-            <button onClick={() => setError("")} className="ml-auto text-rose-600/60 hover:text-rose-600">×</button>
-          </div>
-        )}
-
-        {/* ── Find Doctor Tab ── */}
-        {tab === "book" && (
-          <div className="animate-slide-up space-y-6">
-            {/* Search & Filter Header Panel */}
-            <div className="card p-5 space-y-4 border-slate-200">
-              <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-                {/* Search input */}
-                <div className="relative flex-1">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
-                  <input
-                    id="doctor-search-input"
-                    className="input pl-10 w-full"
-                    placeholder="Search doctor name, specialty, hospital, or clinical expertise..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                  {search && (
-                    <button
-                      onClick={() => setSearch("")}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900 text-sm"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-
-                {/* Secondary Filters */}
-                <div className="flex flex-wrap gap-2.5 items-center">
-                  <select
-                    className="input py-2 px-3 text-xs w-auto"
-                    value={selectedLocation}
-                    onChange={(e) => setSelectedLocation(e.target.value)}
-                  >
-                    <option value="All">📍 All Cities</option>
-                    {LOCATION_OPTIONS.filter((l) => l !== "All").map((loc) => (
-                      <option key={loc} value={loc}>📍 {loc}</option>
-                    ))}
-                  </select>
-
-                  <select
-                    className="input py-2 px-3 text-xs w-auto"
-                    value={selectedMode}
-                    onChange={(e) => setSelectedMode(e.target.value)}
-                  >
-                    <option value="All">🌐 All Modes</option>
-                    <option value="Online">💻 Online</option>
-                    <option value="In-Clinic">🏥 In-Clinic</option>
-                  </select>
-
-                  <select
-                    className="input py-2 px-3 text-xs w-auto"
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                  >
-                    <option value="rating">⭐ Top Rated</option>
-                    <option value="experience">🏆 Experience</option>
-                    <option value="fee_asc">₹ Fee: Low to High</option>
-                    <option value="fee_desc">₹ Fee: High to Low</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Specialty Pills Horizontal Scroll */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin pt-1">
-                {SPECIALTY_OPTIONS.map((spec) => {
-                  const active = selectedSpecialty === spec;
-                  return (
-                    <button
-                      key={spec}
-                      onClick={() => setSelectedSpecialty(spec)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
-                        active
-                          ? "bg-blue-600 text-white shadow-sm scale-105"
-                          : "bg-white hover:bg-white-light text-slate-500 border border-slate-200 hover:border-blue-300"
-                      }`}
-                    >
-                      {spec}
-                    </button>
-                  );
-                })}
-              </div>
+      <main className="max-w-7xl mx-auto px-5 space-y-16 -mt-8 relative z-20">
+        
+        {/* 2. QUICK ACTIONS */}
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-slide-up" style={{ animationDelay: "300ms" }}>
+          <Link to="/patient/doctors" className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all group hover:-translate-y-1">
+            <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
             </div>
-
-            {/* Results Count & Status */}
-            <div className="flex items-center justify-between px-1 text-xs text-slate-400">
-              <span>
-                Showing <strong className="text-slate-900">{doctors.length}</strong> specialists
-                {selectedSpecialty !== "All" ? ` in ${selectedSpecialty}` : ""}
-                {selectedLocation !== "All" ? ` in ${selectedLocation}` : ""}
-              </span>
-              {loadingDoctors && <span className="text-blue-600 animate-pulse">Updating live results...</span>}
+            <h3 className="font-bold text-slate-900">Find a Doctor</h3>
+            <p className="text-sm text-slate-500 mt-1">Search top specialists</p>
+          </Link>
+          <Link to="/patient/hospitals" className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all group hover:-translate-y-1">
+            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
             </div>
+            <h3 className="font-bold text-slate-900">Hospitals</h3>
+            <p className="text-sm text-slate-500 mt-1">Browse top facilities</p>
+          </Link>
+          <Link to="/patient/appointments" className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all group hover:-translate-y-1">
+            <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 mb-4 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+            </div>
+            <h3 className="font-bold text-slate-900">Appointments</h3>
+            <p className="text-sm text-slate-500 mt-1">Manage your visits</p>
+          </Link>
+          <Link to="/patient/calendar" className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all group hover:-translate-y-1">
+            <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 mb-4 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+            </div>
+            <h3 className="font-bold text-slate-900">Health Records</h3>
+            <p className="text-sm text-slate-500 mt-1">View medical history</p>
+          </Link>
+        </section>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {doctors.map((d, i) => {
-                const displayName = d.name?.startsWith("Dr.") ? d.name : `Dr. ${d.name}`;
-                return (
-                  <div
-                    key={d.id}
-                    className="card p-5 flex flex-col group hover:border-blue-300 hover:shadow-2xl transition-all duration-300 relative overflow-hidden animate-slide-up"
-                    style={{ animationDelay: `${i * 50}ms`, animationFillMode: "both" }}
-                  >
-                    {/* Header: Avatar, Name, Rating */}
-                    <div className="flex items-start gap-3.5 mb-3">
-                      <div
-                        className="w-13 h-13 rounded-2xl flex items-center justify-center font-display font-bold text-lg flex-shrink-0 shadow-sm"
-                        style={{ background: "#eff6ff" }}
-                      >
-                        <span className="text-blue-600">{d.name ? d.name.replace("Dr. ", "").charAt(0) : "D"}</span>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-1">
-                          <p className="font-display font-bold text-base text-slate-900 truncate group-hover:text-blue-600 transition-colors">
-                            {displayName}
-                          </p>
-                        </div>
-                        <p className="text-blue-600 text-xs font-semibold mt-0.5 truncate">{d.specialisation}</p>
-                        <p className="text-slate-400 text-[11px] mt-0.5 truncate">
-                          {d.qualifications || "MBBS, MD"} · {d.experience_years || 10}y exp
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Hospital & Location Tag */}
-                    <div className="text-xs text-slate-500 mb-2.5 flex items-center gap-1.5 truncate">
-                      <span>🏥</span>
-                      <span className="truncate">{d.hospital_name || "City Hospital"}</span>
-                      <span>·</span>
-                      <span className="text-slate-900 font-medium shrink-0">📍 {d.location || "Bengaluru"}</span>
-                    </div>
-
-                    {/* Bio Snippet */}
-                    <p className="text-slate-500 text-xs mb-3 line-clamp-2 flex-1 leading-relaxed">
-                      {d.bio || "Experienced clinical specialist providing patient-centered therapeutic care."}
-                    </p>
-
-                    {/* Quick Badges Row: Rating, Mode, Fee */}
-                    <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white border border-slate-200 text-xs mb-4">
-                      <div className="flex items-center gap-1">
-                        <span className="text-amber-500 font-bold">★ {d.rating || "4.9"}</span>
-                        <span className="text-slate-400 text-[11px]">({d.review_count || 45})</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-slate-900 font-bold text-sm">₹{d.consultation_fee || 800}</span>
-                        <span className="text-slate-400 text-[10px] block">{d.consultation_mode?.includes("Online") ? "🌐 Online / Clinic" : "🏥 In-Clinic"}</span>
-                      </div>
-                    </div>
-
-                    {/* Action Buttons: View Profile + Book */}
-                    <div className="grid grid-cols-2 gap-2 mt-auto">
-                      <button
-                        onClick={() => setViewingDoctor(d)}
-                        className="btn-ghost text-xs py-2 px-3 border border-slate-200 hover:border-blue-300 font-semibold"
-                      >
-                        View Profile
-                      </button>
-                      <button
-                        id={`book-doctor-${d.id}`}
-                        className="btn-primary text-xs py-2 px-3 font-semibold shadow-sm"
-                        onClick={() => setSelectedDoctor(d)}
-                      >
-                        Book Slot →
-                      </button>
-                    </div>
+        {/* 2.5 CARE JOURNEY */}
+        {journey && (journey.completed_appointments.length > 0 || journey.follow_ups.length > 0) && (
+          <section className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-display font-bold text-slate-900">Your Care Journey</h2>
+            </div>
+            
+            <div className="space-y-6 relative before:absolute before:inset-y-0 before:left-[19px] before:w-0.5 before:bg-slate-200 pl-2">
+              {journey.follow_ups.map((f, i) => (
+                <div key={`f-${i}`} className="relative pl-10">
+                  <div className="absolute left-0 top-1 w-6 h-6 bg-blue-100 rounded-full border-4 border-white flex items-center justify-center text-blue-600 shadow-sm z-10">
+                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
                   </div>
-                );
-              })}
-
-              {!loadingDoctors && doctors.length === 0 && (
-                <div className="col-span-full card p-12 text-center">
-                  <p className="text-4xl mb-3">🔍</p>
-                  <h3 className="text-lg font-bold text-slate-900 mb-1">No specialists match your filter</h3>
-                  <p className="text-slate-500 text-sm max-w-md mx-auto mb-4">
-                    Try broadening your specialty or city filter to view our verified medical directory.
-                  </p>
-                  <button
-                    onClick={() => {
-                      setSearch("");
-                      setSelectedSpecialty("All");
-                      setSelectedLocation("All");
-                      setSelectedMode("All");
-                    }}
-                    className="btn-ghost text-xs px-4 py-2"
-                  >
-                    Reset All Filters
-                  </button>
+                  <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5">
+                    <div className="text-sm font-bold text-blue-600 mb-1 uppercase tracking-wider">Recommended Follow-up</div>
+                    <div className="text-lg font-bold text-slate-900">{new Date(f.recommended_date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                    <p className="text-slate-600 mt-2 text-sm">{f.reason || "Routine follow-up"}</p>
+                    <button onClick={() => setBookingDoctor({id: f.doctor_id})} className="mt-4 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors shadow-sm">
+                      Book Now
+                    </button>
+                  </div>
                 </div>
-              )}
-
-              {loadingDoctors && doctors.length === 0 && [...Array(6)].map((_, i) => (
-                <div key={i} className="card p-5 animate-pulse space-y-3">
-                  <div className="flex gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-white-light" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-white-light rounded w-3/4" />
-                      <div className="h-3 bg-white-light rounded w-1/2" />
-                    </div>
+              ))}
+              
+              {journey.completed_appointments.slice(0, 3).map((a, i) => (
+                <div key={`a-${i}`} className="relative pl-10">
+                  <div className="absolute left-0 top-1 w-6 h-6 bg-emerald-100 rounded-full border-4 border-white flex items-center justify-center text-emerald-600 shadow-sm z-10">
+                    <div className="w-2 h-2 bg-emerald-600 rounded-full"></div>
                   </div>
-                  <div className="h-3 bg-white-light rounded" />
-                  <div className="h-3 bg-white-light rounded w-2/3" />
-                  <div className="h-10 bg-white-light rounded-xl" />
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="h-8 bg-white-light rounded-lg" />
-                    <div className="h-8 bg-white-light rounded-lg" />
+                  <div>
+                    <div className="text-sm font-bold text-slate-500 mb-1">{a.appointment_date}</div>
+                    <div className="text-lg font-bold text-slate-900">Consultation with {a.doctor_name}</div>
+                    <div className="text-sm text-slate-600 mt-1">{a.symptoms_text}</div>
                   </div>
                 </div>
               ))}
             </div>
-
-            {/* Doctor Profile Detailed Modal */}
-            {viewingDoctor && (
-              <DoctorProfileModal
-                doctor={viewingDoctor}
-                onClose={() => setViewingDoctor(null)}
-                onBook={(doc) => {
-                  setViewingDoctor(null);
-                  setSelectedDoctor(doc);
-                }}
-              />
-            )}
-          </div>
+          </section>
         )}
 
-        {/* ── My Appointments Tab ── */}
-        {tab === "appointments" && (
-          <div className="animate-slide-up">
+        {/* 3. SPECIALTY EXPLORER */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-display font-bold text-slate-900">Explore specialties</h2>
+            <Link to="/patient/doctors" className="text-blue-600 font-semibold hover:text-blue-800 transition-colors">View all →</Link>
+          </div>
+          <div className="flex overflow-x-auto pb-4 gap-4 hide-scrollbar">
+            {SPECIALTIES.map(s => (
+              <Link key={s.name} to={`/patient/doctors?specialty=${s.name}`} className="flex-shrink-0 bg-white border border-slate-200 rounded-full px-6 py-3 flex items-center gap-3 hover:border-blue-300 hover:shadow-md transition-all">
+                <span className="text-xl">{s.icon}</span>
+                <span className="font-semibold text-slate-700">{s.name}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
 
-            {loadingAppts ? (
-              <div className="space-y-3">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="card p-5 animate-pulse">
-                    <div className="flex gap-3"><div className="flex-1 space-y-2"><div className="h-5 bg-white-light rounded w-1/3" /><div className="h-3 bg-white-light rounded w-1/2" /></div><div className="w-20 h-6 bg-white-light rounded-full" /></div>
+        {/* 4. TOP SPECIALISTS */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-display font-bold text-slate-900">Top specialists near you</h2>
+            <Link to="/patient/doctors" className="text-blue-600 font-semibold hover:text-blue-800 transition-colors">See all doctors →</Link>
+          </div>
+          
+          {loading ? (
+            <div className="grid md:grid-cols-2 gap-6">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="bg-white rounded-2xl border border-slate-200 p-6 animate-pulse">
+                  <div className="flex gap-4">
+                    <div className="w-20 h-20 bg-slate-200 rounded-2xl"></div>
+                    <div className="flex-1 space-y-3 py-1">
+                      <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+                      <div className="h-3 bg-slate-200 rounded w-1/3"></div>
+                      <div className="h-3 bg-slate-200 rounded w-1/4"></div>
+                    </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {appointments.map((a, i) => {
-                  const summary = safeParseJSON(a.previsit_summary);
-                  return (
-                    <div 
-                      key={a.id} 
-                      className="card p-5 hover:border-slate-300 transition-all animate-slide-up"
-                      style={{ animationDelay: `${i * 50}ms`, animationFillMode: "both" }}
-                    >
-                      {/* Appointment header */}
-                      <div className="flex items-start justify-between flex-wrap gap-2">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
-                               style={{ background: "linear-gradient(135deg, #bfdbfe, rgba(20,184,166,0.1))" }}>
-                            <span className="text-blue-600">Dr</span>
-                          </div>
-                          <div>
-                            <p className="font-display font-bold text-slate-900">Dr. {a.doctor_name}</p>
-                            <p className="text-slate-500 text-sm">{a.specialisation}</p>
-                            <p className="text-slate-400 text-xs mt-0.5">
-                              📅 {a.appointment_date} at {a.start_time}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {summary && <UrgencyBadge level={summary.urgency} />}
-                          <StatusBadge status={a.status} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-6">
+              {topDoctors.map(doctor => (
+                <div key={doctor.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg transition-all p-6 group">
+                  <div className="flex gap-5">
+                    {/* Doctor Avatar */}
+                    <div className="relative">
+                      <div className="w-20 h-20 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 font-display font-bold text-3xl shadow-inner overflow-hidden">
+                        {doctor.name.charAt(0)}
+                      </div>
+                      <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-0.5 shadow-sm">
+                        <div className="bg-emerald-500 text-white w-5 h-5 rounded-full flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
                         </div>
                       </div>
-
-                      {/* Symptom form — only if booked and no symptoms yet */}
-                      {a.status === "booked" && !a.symptoms_text && (
-                        <div className="mt-4 border-t border-slate-200 pt-4">
-                          <label className="label">Tell the doctor how you're feeling</label>
-                          <textarea
-                            id={`symptoms-${a.id}`}
-                            className="input min-h-[80px] resize-none"
-                            placeholder="Describe your symptoms before the visit…"
-                            value={symptomDraft[a.id] || ""}
-                            onChange={(e) => setSymptomDraft({ ...symptomDraft, [a.id]: e.target.value })}
-                          />
-                          <button
-                            id={`submit-symptoms-${a.id}`}
-                            className="btn-secondary mt-2"
-                            onClick={() => submitSymptoms(a.id)}
-                          >
-                            Submit symptoms & get AI summary
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Already submitted symptoms */}
-                      {a.symptoms_text && !summary && (
-                        <div className="mt-3 px-4 py-3 rounded-xl bg-white-light border border-slate-200 text-sm text-slate-500">
-                          <span className="font-semibold text-slate-400 text-xs uppercase tracking-wide">Symptoms submitted: </span>
-                          {a.symptoms_text}
-                        </div>
-                      )}
-
-                      {/* AI pre-visit summary */}
-                      {summary && (
-                        <div className="mt-4 border-t border-slate-200 pt-4 rounded-b-xl">
-                          <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">🤖 AI Pre-Visit Summary</p>
-                          {a.previsit_llm_failed && (
-                            <p className="text-xs text-amber-500 bg-amber-50 border border-amber/20 rounded-lg px-3 py-2 mb-3">
-                              ⚠ AI summary unavailable — showing default assessment.
-                            </p>
-                          )}
-                          <div className="grid sm:grid-cols-2 gap-3">
-                            <div className="bg-white rounded-xl p-3 border border-slate-200">
-                              <p className="text-xs text-slate-400 mb-1">Chief complaint</p>
-                              <p className="text-sm text-slate-900 font-medium">{summary.chief_complaint}</p>
-                            </div>
-                            <div className="bg-white rounded-xl p-3 border border-slate-200">
-                              <p className="text-xs text-slate-400 mb-1">Urgency level</p>
-                              <UrgencyBadge level={summary.urgency} />
-                            </div>
-                          </div>
-                          {summary.suggested_questions?.length > 0 && (
-                            <div className="mt-3 bg-white rounded-xl p-3 border border-slate-200">
-                              <p className="text-xs text-slate-400 mb-2">Questions to ask the doctor</p>
-                              <ul className="space-y-1">
-                                {summary.suggested_questions.map((q, i) => (
-                                  <li key={i} className="text-sm text-slate-500 flex gap-2">
-                                    <span className="text-blue-600 text-xs mt-0.5">→</span> {q}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Post-visit summary */}
-                      {a.postvisit_summary && (
-                        <div className="mt-4 border-t border-slate-200 pt-4">
-                          <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">📋 Visit Summary</p>
-                          {a.postvisit_llm_failed && (
-                            <p className="text-xs text-amber-500 bg-amber-50 border border-amber/20 rounded-lg px-3 py-2 mb-3">
-                              ⚠ AI summary unavailable — showing doctor's raw notes.
-                            </p>
-                          )}
-                          <div className="bg-white rounded-xl p-4 border border-slate-200">
-                            <p className="text-sm text-slate-900 whitespace-pre-line leading-relaxed">{a.postvisit_summary}</p>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Actions */}
-                      {a.status === "booked" && (
-                        <div className="mt-4 pt-3 border-t border-slate-200 flex gap-2">
-                          <button
-                            id={`cancel-appt-${a.id}`}
-                            className="btn-danger btn-sm"
-                            onClick={() => cancelAppointment(a.id)}
-                          >
-                            Cancel appointment
-                          </button>
-                        </div>
-                      )}
                     </div>
-                  );
-                })}
-                {appointments.length === 0 && (
-                  <div className="card p-12 text-center">
-                    <p className="text-4xl mb-3">📭</p>
-                    <p className="text-slate-500 text-lg font-semibold">No appointments yet</p>
-                    <p className="text-slate-400 text-sm mt-1">Switch to "Find Doctor" to book your first appointment.</p>
-                    <button className="btn-primary mt-4" onClick={() => setTab("book")}>Find a doctor</button>
+                    
+                    {/* Details */}
+                    <div className="flex-1">
+                      <h3 className="font-display font-bold text-lg text-slate-900 group-hover:text-blue-600 transition-colors">Dr. {doctor.name}</h3>
+                      <p className="text-blue-600 font-semibold text-sm">{doctor.specialisation}</p>
+                      
+                      <div className="mt-2 text-sm text-slate-500 flex flex-wrap gap-x-4 gap-y-1">
+                        <span className="flex items-center gap-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                          {doctor.hospital_name}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                          {doctor.location}
+                        </span>
+                      </div>
+                      
+                      <div className="mt-2 flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-500" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                        <span className="font-bold text-slate-700 text-sm">{doctor.rating?.toFixed(1) || "4.8"}</span>
+                        <span className="text-slate-400 text-xs ml-1">(120+ reviews)</span>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-            )}
+                  
+                  <div className="mt-5 pt-5 border-t border-slate-100 flex gap-3">
+                    <button 
+                      onClick={() => setViewingDoctor(doctor)}
+                      className="flex-1 btn-secondary text-sm"
+                    >
+                      View Profile
+                    </button>
+                    <button 
+                      onClick={() => setBookingDoctor(doctor)}
+                      className="flex-1 btn-primary text-sm shadow-md shadow-blue-500/20"
+                    >
+                      Book Appointment
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* 5. TOP HOSPITALS (DEMO) */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-display font-bold text-slate-900">Verified Hospitals</h2>
+            <Link to="/patient/hospitals" className="text-blue-600 font-semibold hover:text-blue-800 transition-colors">View all →</Link>
           </div>
-        )}
+          
+          <div className="grid md:grid-cols-3 gap-6">
+            {TOP_HOSPITALS.map((h, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-lg transition-all group">
+                <div className="h-32 bg-slate-100 relative">
+                  {/* Mock image background */}
+                  <div className="absolute inset-0 bg-blue-900/10 mix-blend-multiply"></div>
+                  <div className="absolute inset-0 flex items-center justify-center text-5xl opacity-20">{h.img}</div>
+                  <div className="absolute top-4 right-4 bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                    Verified
+                  </div>
+                </div>
+                <div className="p-5">
+                  <h3 className="font-display font-bold text-lg text-slate-900">{h.name}</h3>
+                  <p className="text-slate-500 text-sm mb-3">{h.city}</p>
+                  
+                  <div className="flex items-center gap-1 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-500" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                    <span className="font-bold text-slate-700 text-sm">{h.rating}</span>
+                    <span className="text-slate-400 text-xs ml-1">({h.reviews} Reviews)</span>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    {h.tags.map(t => (
+                      <span key={t} className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-md">{t}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 6. TRUST & SAFETY */}
+        <section className="bg-white rounded-3xl border border-slate-200 p-8 md:p-12 shadow-sm text-center">
+          <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mx-auto mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+          </div>
+          <h2 className="text-2xl font-display font-bold text-slate-900 mb-4">Your healthcare information is protected</h2>
+          <div className="flex flex-wrap justify-center gap-y-3 gap-x-8 text-slate-600 font-medium">
+            <span className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Verified healthcare professionals</span>
+            <span className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Secure appointment booking</span>
+            <span className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Protected patient information</span>
+          </div>
+        </section>
+
       </main>
 
-      {selectedDoctor && (
+      {/* MODALS */}
+      {viewingDoctor && (
+        <DoctorProfileModal 
+          doctor={viewingDoctor} 
+          onClose={() => setViewingDoctor(null)} 
+          onBook={(doc) => setBookingDoctor(doc)}
+        />
+      )}
+      {bookingDoctor && (
         <BookingModal
-          doctor={selectedDoctor}
-          onClose={() => setSelectedDoctor(null)}
-          onBooked={() => {
-            setSelectedDoctor(null);
-            setTab("appointments");
-            loadAppointments();
+          doctor={bookingDoctor}
+          onClose={() => setBookingDoctor(null)}
+          onSuccess={() => {
+            setBookingDoctor(null);
           }}
         />
       )}

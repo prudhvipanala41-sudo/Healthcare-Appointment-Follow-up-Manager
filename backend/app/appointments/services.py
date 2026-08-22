@@ -61,8 +61,10 @@ def generate_available_slots(doctor: DoctorProfile, target_date: date):
 
     booked = {
         a.start_time
-        for a in Appointment.query.filter_by(
-            doctor_id=doctor.id, appointment_date=target_date, status=AppointmentStatus.BOOKED
+        for a in Appointment.query.filter(
+            Appointment.doctor_id == doctor.id,
+            Appointment.appointment_date == target_date,
+            Appointment.status.in_([AppointmentStatus.CONFIRMED, AppointmentStatus.PENDING])
         ).all()
     }
     held_cutoff = datetime.utcnow()
@@ -125,7 +127,7 @@ def book_appointment(doctor: DoctorProfile, patient_id: str, target_date: date, 
         appointment_date=target_date,
         start_time=start_time,
         end_time=slot_end.strftime("%H:%M"),
-        status=AppointmentStatus.BOOKED,
+        status=AppointmentStatus.PENDING,
     )
     db.session.add(appointment)
     try:

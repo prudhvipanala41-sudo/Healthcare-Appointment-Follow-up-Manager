@@ -9,7 +9,7 @@ from app.models import Appointment, AppointmentStatus, DoctorProfile, Medication
 from app.appointments.services import BookingError, book_appointment, cancel_appointment, generate_available_slots, hold_slot
 from app.llm.service import generate_previsit_summary
 from app.notifications.calendar_service import create_events, delete_events
-from app.notifications.email_service import send_booking_confirmation, send_cancellation
+from app.notifications.email_service import send_booking_pending, send_cancellation
 from app.utils.security import roles_required
 
 bp = Blueprint("patient", __name__, url_prefix="/api/patient")
@@ -239,3 +239,17 @@ def cancel(appointment_id):
     except Exception:
         current_app.logger.exception("cancellation email failed")
     return jsonify(appointment.to_dict())
+
+@bp.get("/journey")
+@roles_required("patient")
+def get_journey():
+    patient_id = get_jwt_identity()
+    from app.models import FollowUp
+    
+    past_appointments = Appointment.query.filter_by(patient_id=patient_id, status=AppointmentStatus.COMPLETED).order_by(Appointment.appointment_date.desc()).all()
+    follow_ups = FollowUp.query.filter_by(patient_id=patient_id).order_by(FollowUp.recommended_date.asc()).all()
+    
+    return jsonify({
+        "completed_appointments": [a.to_dict() for a in past_appointments],
+        "follow_ups": [f.to_dict() for f in follow_ups]
+    })

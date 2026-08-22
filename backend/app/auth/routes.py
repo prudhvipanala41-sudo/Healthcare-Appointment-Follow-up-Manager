@@ -57,6 +57,23 @@ def me():
     return jsonify(user.to_dict())
 
 
+@bp.put("/me")
+@jwt_required()
+def update_me():
+    user = User.query.get(get_jwt_identity())
+    if not user:
+        return jsonify({"error": "not found"}), 404
+        
+    data = request.get_json(force=True)
+    if "name" in data and data["name"].strip():
+        user.name = data["name"].strip()
+    if "phone" in data:
+        user.phone = data["phone"].strip() if data["phone"] else None
+        
+    db.session.commit()
+    return jsonify(user.to_dict())
+
+
 @bp.post("/forgot-password")
 def forgot_password():
     data = request.get_json(force=True)

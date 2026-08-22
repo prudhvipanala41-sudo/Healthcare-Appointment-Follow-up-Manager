@@ -18,9 +18,12 @@ class Role(str, enum.Enum):
 
 
 class AppointmentStatus(str, enum.Enum):
-    BOOKED = "booked"
+    PENDING = "pending"
+    CONFIRMED = "confirmed"
+    REJECTED = "rejected"
     CANCELLED = "cancelled"
     COMPLETED = "completed"
+    RESCHEDULED = "rescheduled"
     CANCELLED_BY_LEAVE = "cancelled_by_leave"
 
 
@@ -57,6 +60,7 @@ class DoctorProfile(db.Model):
     __tablename__ = "doctor_profiles"
     id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
     user_id = db.Column(db.String(36), db.ForeignKey("users.id"), unique=True, nullable=False)
+    hospital_id = db.Column(db.String(36), db.ForeignKey("hospitals.id"), nullable=True)
     specialisation = db.Column(db.String(120), nullable=False, index=True)
     slot_duration_minutes = db.Column(db.Integer, nullable=False, default=20)
     working_start = db.Column(db.String(5), nullable=False, default="09:00")  # HH:MM
@@ -80,6 +84,7 @@ class DoctorProfile(db.Model):
     source_url = db.Column(db.String(500), default="")
 
     leaves = db.relationship("DoctorLeave", backref="doctor", cascade="all, delete-orphan")
+    hospital = db.relationship("Hospital", foreign_keys=[hospital_id], backref="doctors")
 
     def to_dict(self):
         return {
@@ -108,6 +113,7 @@ class DoctorProfile(db.Model):
             "verification_status": getattr(self, "verification_status", "Verified Specialist") or "Verified Specialist",
             "image_url": getattr(self, "image_url", "") or "",
             "source_url": getattr(self, "source_url", "") or "",
+            "hospital_id": self.hospital_id,
         }
 
 
@@ -140,7 +146,7 @@ class Appointment(db.Model):
     start_time = db.Column(db.String(5), nullable=False)  # HH:MM
     end_time = db.Column(db.String(5), nullable=False)
 
-    status = db.Column(db.Enum(AppointmentStatus), default=AppointmentStatus.BOOKED, nullable=False)
+    status = db.Column(db.Enum(AppointmentStatus), default=AppointmentStatus.PENDING, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Pre-visit
@@ -241,3 +247,66 @@ class CalendarToken(db.Model):
     access_token = db.Column(db.Text)
     token_expiry = db.Column(db.DateTime)
 
+
+class Hospital(db.Model):
+    __tablename__ = "hospitals"
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    name = db.Column(db.String(255), nullable=False)
+    location = db.Column(db.String(255), nullable=False)
+    address = db.Column(db.Text, default="")
+    image_url = db.Column(db.String(500), default="")
+    verification_status = db.Column(db.String(50), default="Verified")
+    contact_phone = db.Column(db.String(30), default="")
+    contact_email = db.Column(db.String(180), default="")
+    website = db.Column(db.String(255), default="")
+    emergency_services = db.Column(db.Boolean, default=True)
+    specialities_text = db.Column(db.Text, default="")
+    rating = db.Column(db.Float, default=4.5)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "location": self.location,
+            "address": self.address,
+            "image_url": self.image_url,
+            "verification_status": self.verification_status,
+            "contact_phone": self.contact_phone,
+            "contact_email": self.contact_email,
+            "website": self.website,
+            "emergency_services": self.emergency_services,
+            "specialities_text": self.specialities_text,
+            "rating": self.rating,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "doctors_count": len(self.doctors) if self.doctors else 0
+        }
+
+
+class FollowUp(db.Model):
+    __tablename__ = "follow_ups"
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    patient_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
+    doctor_id = db.Column(db.String(36), db.ForeignKey("doctor_profiles.id"), nullable=False)
+    original_appointment_id = db.Column(db.String(36), db.ForeignKey("appointments.id"), nullable=False)
+    recommended_date = db.Column(db.Date, nullable=False)
+    reason = db.Column(db.Text, default="")
+    status = db.Column(db.String(50), default="pending")  # pending, scheduled, completed
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    patient = db.relationship("User", foreign_keys=[patient_id])
+    doctor = db.relationship("DoctorProfile", foreign_keys=[doctor_id])
+    original_appointment = db.relationship("Appointment", foreign_keys=[original_appointment_id])
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "patient_id": self.patient_id,
+            "doctor_id": self.doctor_id,
+            "doctor_name": self.doctor.user.name if self.doctor else "",
+            "original_appointment_id": self.original_appointment_id,
+            "recommended_date": self.recommended_date.isoformat() if self.recommended_date else None,
+            "reason": self.reason,
+            "status": self.status,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }

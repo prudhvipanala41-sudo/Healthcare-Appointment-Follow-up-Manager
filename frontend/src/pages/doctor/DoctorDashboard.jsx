@@ -1,506 +1,204 @@
-import { useEffect, useState, useCallback } from "react";
-import NavBar from "../../components/NavBar";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import api, { errorMessage } from "../../api";
 import StatusBadge from "../../components/StatusBadge";
-import UrgencyBadge from "../../components/UrgencyBadge";
-import { useAuth } from "../../AuthContext";
-
-const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-function safeParseJSON(str) {
-  if (!str) return null;
-  try {
-    const v = typeof str === "string" ? JSON.parse(str) : str;
-    return typeof v === "object" && v !== null ? v : null;
-  } catch { return null; }
-}
+import DoctorLayout from "./DoctorLayout";
 
 export default function DoctorDashboard() {
-  const { user } = useAuth();
-  const [tab, setTab] = useState("appointments");
   const [appointments, setAppointments] = useState([]);
-  const [profile, setProfile] = useState(null);
-  const [leaves, setLeaves] = useState([]);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [drafts, setDrafts] = useState({});
-  const [openId, setOpenId] = useState(null);
-  const [profileForm, setProfileForm] = useState(null);
-  const [profileBusy, setProfileBusy] = useState(false);
-  const [leaveDate, setLeaveDate] = useState("");
-  const [leaveReason, setLeaveReason] = useState("");
-  const [leaveBusy, setLeaveBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const loadAll = useCallback(async () => {
-    try {
-      const [apptRes, profileRes, leaveRes] = await Promise.all([
-        api.get("/api/doctor/appointments"),
-        api.get("/api/doctor/profile"),
-        api.get("/api/doctor/leaves"),
-      ]);
-      setAppointments(apptRes.data);
-      setProfile(profileRes.data);
-      setLeaves(leaveRes.data);
-      if (!profileForm) {
-        setProfileForm({
-          working_start: profileRes.data.working_start,
-          working_end:   profileRes.data.working_end,
-          slot_duration_minutes: profileRes.data.slot_duration_minutes,
-          working_days:  profileRes.data.working_days,
-          bio:           profileRes.data.bio,
-        });
-      }
-    } catch (err) {
-      setError(errorMessage(err));
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    fetchDashboardData();
   }, []);
 
-  useEffect(() => { loadAll(); }, [loadAll]);
-
-  function updateDraft(id, field, value) {
-    setDrafts({ ...drafts, [id]: { ...drafts[id], [field]: value } });
-  }
-
-  function toggleDay(day) {
-    const days = new Set((profileForm.working_days || "").split(",").filter(Boolean));
-    if (days.has(String(day))) days.delete(String(day));
-    else days.add(String(day));
-    setProfileForm({ ...profileForm, working_days: Array.from(days).sort().join(",") });
-  }
-
-  function notify(msg, isError = false) {
-    if (isError) setError(msg); else setSuccess(msg);
-    setTimeout(() => { setError(""); setSuccess(""); }, 4000);
-  }
-
-  async function submitNotes(id) {
-    const draft = drafts[id] || {};
-    if (!draft.notes?.trim()) return;
+  async function fetchDashboardData() {
     try {
-      await api.post(`/api/doctor/appointments/${id}/notes`, {
-        notes: draft.notes,
-        prescription: draft.prescription || "",
-      });
-      await loadAll();
-      setOpenId(null);
-      notify("Notes saved. Patient-friendly summary generated.");
+      setLoading(true);
+      const res = await api.get("/api/doctor/appointments");
+      setAppointments(res.data);
     } catch (err) {
-      notify(errorMessage(err), true);
-    }
-  }
-
-  async function saveProfile() {
-    setProfileBusy(true);
-    try {
-      const res = await api.put("/api/doctor/profile", profileForm);
-      setProfile(res.data);
-      notify("Profile updated successfully.");
-    } catch (err) {
-      notify(errorMessage(err), true);
+      console.error(errorMessage(err));
     } finally {
-      setProfileBusy(false);
+      setLoading(false);
     }
   }
 
-  async function addLeave() {
-    if (!leaveDate) return;
-    setLeaveBusy(true);
-    try {
-      const res = await api.post("/api/doctor/leaves", { date: leaveDate, reason: leaveReason });
-      const n = res.data.affected_appointments.length;
-      notify(n > 0
-        ? `Leave added for ${leaveDate}. ${n} existing booking(s) cancelled and patients notified.`
-        : `Leave added for ${leaveDate}. No existing bookings affected.`
-      );
-      setLeaveDate("");
-      setLeaveReason("");
-      await loadAll();
-    } catch (err) {
-      notify(errorMessage(err), true);
-    } finally {
-      setLeaveBusy(false);
-    }
-  }
+  const today = new Date().toISOString().split("T")[0];
+  const todaysAppointments = appointments.filter(a => a.appointment_date === today);
+  const pendingRequests = appointments.filter(a => a.status === "pending");
+  const upcomingAppointments = appointments.filter(a => a.appointment_date >= today && a.status === "confirmed");
+  const completedAppointments = appointments.filter(a => a.status === "completed");
 
-  async function removeLeave(leaveId) {
-    if (!confirm("Remove this leave day? Patients won't be automatically re-notified.")) return;
-    try {
-      await api.delete(`/api/doctor/leaves/${leaveId}`);
-      notify("Leave day removed.");
-      await loadAll();
-    } catch (err) {
-      notify(errorMessage(err), true);
-    }
+  if (loading) {
+    return (
+      <DoctorLayout>
+        <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </DoctorLayout>
+    );
   }
-
-  const upcoming = appointments.filter((a) => a.status === "booked");
-  const past = appointments.filter((a) => a.status !== "booked");
 
   return (
-    <div className="min-h-screen">
-      <NavBar />
-      <main className="max-w-5xl mx-auto px-5 py-8 animate-fade-in">
+    <DoctorLayout>
+      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
+        
         {/* Header */}
-        <div className="flex items-start justify-between flex-wrap gap-4 mb-8">
-          <div>
-            <h1 className="font-display font-bold text-3xl text-slate-900">
-              Dr. <span className="text-gradient">{user?.name}</span>
-            </h1>
-            {profile && (
-              <p className="text-slate-500 text-sm mt-1">{profile.specialisation} · {profile.working_start}–{profile.working_end}</p>
-            )}
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-slate-900 tracking-tight">Doctor Dashboard</h1>
+          <p className="mt-1 text-sm text-slate-500">Here's what's happening with your practice today.</p>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-slate-600 text-sm">Today's Consultations</h3>
+              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-3xl font-display font-bold text-slate-900">{todaysAppointments.length}</p>
           </div>
-          <div className="tab-bar">
-            {[
-              { id: "appointments", label: "📋 Appointments", badge: upcoming.length },
-              { id: "profile",      label: "⚙ Profile & Availability" },
-              { id: "leaves",       label: "🗓 My Leave Days", badge: leaves.length || undefined },
-            ].map((t) => (
-              <button key={t.id} className={`tab-btn ${tab === t.id ? "active" : ""}`} onClick={() => setTab(t.id)}>
-                {t.label}
-                {t.badge > 0 && (
-                  <span className="ml-1.5 bg-blue-600 text-white text-xs rounded-full w-5 h-5 inline-flex items-center justify-center font-bold">
-                    {t.badge}
-                  </span>
-                )}
-              </button>
-            ))}
+
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-slate-600 text-sm">Pending Requests</h3>
+              <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-3xl font-display font-bold text-slate-900">{pendingRequests.length}</p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-slate-600 text-sm">Upcoming (Confirmed)</h3>
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-3xl font-display font-bold text-slate-900">{upcomingAppointments.length}</p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-slate-600 text-sm">Total Completed</h3>
+              <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-3xl font-display font-bold text-slate-900">{completedAppointments.length}</p>
           </div>
         </div>
 
-        {/* Alerts */}
-        {error && (
-          <div className="flex items-center gap-2 text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 mb-4">
-            <span>⚠</span> {error}
-          </div>
-        )}
-        {success && (
-          <div className="flex items-center gap-2 text-sm text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-4">
-            <span>✓</span> {success}
-          </div>
-        )}
-
-        {/* ── Appointments Tab ── */}
-        {tab === "appointments" && (
-          <div className="animate-slide-up space-y-8">
-            <section>
-              <h2 className="font-display font-semibold text-xl text-slate-900 mb-4 flex items-center gap-2">
-                <span className="glow-dot" /> Upcoming appointments
-              </h2>
-              <div className="space-y-4">
-                {upcoming.map((a) => {
-                  const summary = safeParseJSON(a.previsit_summary);
-                  const isOpen = openId === a.id;
-                  return (
-                    <div key={a.id} className="card p-5 hover:border-slate-200-light">
-                      <div className="flex items-start justify-between flex-wrap gap-2">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0"
-                               style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.05))" }}>
-                            <span className="text-emerald-600">{a.patient_name?.[0]?.toUpperCase()}</span>
-                          </div>
-                          <div>
-                            <p className="font-display font-bold text-slate-900">{a.patient_name}</p>
-                            <p className="text-slate-400 text-xs">📅 {a.appointment_date} at {a.start_time}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {summary && <UrgencyBadge level={summary.urgency} />}
-                          <StatusBadge status={a.status} />
-                        </div>
-                      </div>
-
-                      {/* Pre-visit AI summary */}
-                      {summary ? (
-                        <div className="mt-4 rounded-xl bg-white border border-slate-200 p-4 text-sm">
-                          {a.previsit_llm_failed && (
-                            <p className="text-xs text-amber-500 bg-amber-50 border border-amber/20 rounded-lg px-3 py-2 mb-3">
-                              ⚠ AI summary unavailable — showing raw symptoms.
-                            </p>
-                          )}
-                          <div className="grid sm:grid-cols-2 gap-3 mb-3">
-                            <div>
-                              <p className="text-slate-400 text-xs mb-1">Chief complaint</p>
-                              <p className="text-slate-900 font-medium">{summary.chief_complaint}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-400 text-xs mb-1">Raw symptoms</p>
-                              <p className="text-slate-500">{a.symptoms_text}</p>
-                            </div>
-                          </div>
-                          {summary.suggested_questions?.length > 0 && (
-                            <div>
-                              <p className="text-slate-400 text-xs mb-2">Suggested questions to ask patient</p>
-                              <ul className="space-y-1">
-                                {summary.suggested_questions.map((q, i) => (
-                                  <li key={i} className="text-slate-500 flex gap-2">
-                                    <span className="text-blue-600 text-xs mt-0.5">→</span> {q}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-slate-400 mt-3 italic">
-                          Patient hasn't submitted a symptom form yet.
-                        </p>
-                      )}
-
-                      {/* Post-visit notes form */}
-                      {!isOpen ? (
-                        <button
-                          id={`add-notes-${a.id}`}
-                          className="btn-secondary mt-4"
-                          onClick={() => setOpenId(a.id)}
-                        >
-                          📝 Add post-visit notes
-                        </button>
-                      ) : (
-                        <div className="mt-4 border-t border-slate-200 pt-4 space-y-4 animate-slide-up">
-                          <div>
-                            <label className="label">Clinical notes <span className="text-rose-600">*</span></label>
-                            <textarea
-                              id={`notes-${a.id}`}
-                              className="input min-h-[100px] resize-none"
-                              placeholder="Diagnosis, examination findings, treatment plan…"
-                              value={drafts[a.id]?.notes || ""}
-                              onChange={(e) => updateDraft(a.id, "notes", e.target.value)}
-                            />
-                          </div>
-                          <div>
-                            <label className="label">
-                              Prescription
-                              <span className="normal-case font-normal text-slate-400 ml-1">
-                                (one per line — e.g. "Paracetamol 500mg – twice daily for 5 days")
-                              </span>
-                            </label>
-                            <textarea
-                              id={`prescription-${a.id}`}
-                              className="input min-h-[80px] resize-none"
-                              placeholder={"Paracetamol 500mg – twice daily for 5 days\nOmeprazole 20mg – once daily for 7 days"}
-                              value={drafts[a.id]?.prescription || ""}
-                              onChange={(e) => updateDraft(a.id, "prescription", e.target.value)}
-                            />
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              id={`save-notes-${a.id}`}
-                              className="btn-primary"
-                              onClick={() => submitNotes(a.id)}
-                              disabled={!drafts[a.id]?.notes?.trim()}
-                            >
-                              Save & generate patient summary
-                            </button>
-                            <button className="btn-ghost" onClick={() => setOpenId(null)}>Cancel</button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                {upcoming.length === 0 && (
-                  <div className="card p-10 text-center">
-                    <p className="text-4xl mb-3">🗓</p>
-                    <p className="text-slate-500">No upcoming appointments.</p>
-                  </div>
-                )}
+        {/* Main Content Area */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+          
+          {/* Left Column: Today's Schedule */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h2 className="font-display font-bold text-lg text-slate-900">Today's Schedule</h2>
+                <Link to="/doctor/appointments" className="text-sm font-bold text-blue-600 hover:text-blue-700">View All</Link>
               </div>
-            </section>
-
-            <section>
-              <h2 className="font-display font-semibold text-xl text-slate-900 mb-4">History</h2>
-              <div className="space-y-2">
-                {past.map((a) => (
-                  <div key={a.id} className="card p-4 flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-slate-900 text-sm">{a.patient_name}</p>
-                      <p className="text-slate-400 text-xs">📅 {a.appointment_date} at {a.start_time}</p>
-                    </div>
-                    <StatusBadge status={a.status} />
-                  </div>
-                ))}
-                {past.length === 0 && <p className="text-slate-400 text-sm">No past appointments.</p>}
-              </div>
-            </section>
-          </div>
-        )}
-
-        {/* ── Profile & Availability Tab ── */}
-        {tab === "profile" && profileForm && (
-          <div className="animate-slide-up max-w-2xl">
-            <h2 className="font-display font-semibold text-xl text-slate-900 mb-5">Profile & Availability</h2>
-            <div className="card p-6 space-y-5">
-              {/* Working hours */}
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="label">Start time</label>
-                  <input
-                    id="profile-start"
-                    type="time"
-                    className="input"
-                    value={profileForm.working_start}
-                    onChange={(e) => setProfileForm({ ...profileForm, working_start: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="label">End time</label>
-                  <input
-                    id="profile-end"
-                    type="time"
-                    className="input"
-                    value={profileForm.working_end}
-                    onChange={(e) => setProfileForm({ ...profileForm, working_end: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="label">Slot (min)</label>
-                  <input
-                    id="profile-slot"
-                    type="number"
-                    min={5}
-                    max={120}
-                    className="input"
-                    value={profileForm.slot_duration_minutes}
-                    onChange={(e) => setProfileForm({ ...profileForm, slot_duration_minutes: Number(e.target.value) })}
-                  />
-                </div>
-              </div>
-
-              {/* Working days */}
-              <div>
-                <label className="label">Working days</label>
-                <div className="flex gap-2 flex-wrap">
-                  {DAY_LABELS.map((label, idx) => {
-                    const active = (profileForm.working_days || "").split(",").includes(String(idx));
-                    return (
-                      <button
-                        key={label}
-                        id={`day-${label}`}
-                        type="button"
-                        onClick={() => toggleDay(idx)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-150 ${
-                          active
-                            ? "bg-blue-600 border-blue-600 text-white shadow-sm"
-                            : "bg-white border-slate-200 text-slate-500 hover:border-blue-200"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Bio */}
-              <div>
-                <label className="label">Bio</label>
-                <textarea
-                  id="profile-bio"
-                  className="input min-h-[80px] resize-none"
-                  placeholder="Brief professional bio shown to patients…"
-                  value={profileForm.bio}
-                  onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
-                />
-              </div>
-
-              <button
-                id="save-profile-btn"
-                className="btn-primary"
-                onClick={saveProfile}
-                disabled={profileBusy}
-              >
-                {profileBusy ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    Saving…
-                  </span>
-                ) : "Save profile"}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── Leave Days Tab ── */}
-        {tab === "leaves" && (
-          <div className="animate-slide-up">
-            <h2 className="font-display font-semibold text-xl text-slate-900 mb-5">My Leave Days</h2>
-            <div className="grid lg:grid-cols-2 gap-6">
-              {/* Add leave form */}
-              <div className="card p-5 space-y-4">
-                <h3 className="font-display font-semibold text-slate-900">Mark yourself unavailable</h3>
-                <p className="text-slate-400 text-xs">
-                  Adding a leave day will cancel any existing bookings on that date and notify affected patients.
-                </p>
-                <div>
-                  <label className="label">Date</label>
-                  <input
-                    id="leave-date-input"
-                    type="date"
-                    className="input"
-                    min={new Date().toISOString().slice(0, 10)}
-                    value={leaveDate}
-                    onChange={(e) => setLeaveDate(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="label">Reason <span className="normal-case font-normal text-slate-400">(optional)</span></label>
-                  <input
-                    id="leave-reason-input"
-                    className="input"
-                    placeholder="Conference, personal leave, etc."
-                    value={leaveReason}
-                    onChange={(e) => setLeaveReason(e.target.value)}
-                  />
-                </div>
-                <button
-                  id="add-leave-btn"
-                  className="btn-danger w-full"
-                  disabled={!leaveDate || leaveBusy}
-                  onClick={addLeave}
-                >
-                  {leaveBusy ? (
-                    <span className="flex items-center gap-2">
-                      <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      Marking leave…
-                    </span>
-                  ) : "Mark as unavailable"}
-                </button>
-              </div>
-
-              {/* Existing leaves */}
-              <div>
-                <h3 className="font-display font-semibold text-slate-900 mb-3">Scheduled leave days</h3>
-                {leaves.length === 0 ? (
-                  <div className="card p-8 text-center">
-                    <p className="text-3xl mb-2">✅</p>
-                    <p className="text-slate-500 text-sm">No leave days scheduled.</p>
+              <div className="p-0">
+                {todaysAppointments.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500">
+                    <p>No appointments scheduled for today.</p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {leaves.map((l) => (
-                      <div key={l.id} className="card p-4 flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold text-slate-900 text-sm">📅 {l.leave_date}</p>
-                          {l.reason && <p className="text-slate-400 text-xs mt-0.5">{l.reason}</p>}
+                  <ul className="divide-y divide-slate-100">
+                    {todaysAppointments.map(appt => (
+                      <li key={appt.id} className="p-6 hover:bg-slate-50 transition-colors">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold border border-blue-200">
+                              {appt.patient_name?.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-900">{appt.patient_name}</p>
+                              <div className="flex items-center gap-2 mt-1 text-sm text-slate-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>{appt.start_time} - {appt.end_time}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <StatusBadge status={appt.status} />
+                          </div>
                         </div>
-                        <button
-                          id={`remove-leave-${l.id}`}
-                          className="btn-ghost btn-sm text-rose-600 hover:text-rose-600"
-                          onClick={() => removeLeave(l.id)}
-                        >
-                          Remove
-                        </button>
-                      </div>
+                      </li>
                     ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Pending Requests */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h2 className="font-display font-bold text-lg text-slate-900">Pending Requests</h2>
+                  {pendingRequests.length > 0 && (
+                    <span className="bg-rose-100 text-rose-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                      {pendingRequests.length} new
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="p-0">
+                {pendingRequests.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500">
+                    <p>No pending appointment requests.</p>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-slate-100">
+                    {pendingRequests.slice(0, 5).map(appt => (
+                      <li key={appt.id} className="p-5 hover:bg-slate-50 transition-colors">
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="font-bold text-slate-900 text-sm">{appt.patient_name}</p>
+                          <span className="text-xs font-medium text-slate-500">{appt.appointment_date}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-4">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>{appt.start_time}</span>
+                        </div>
+                        <Link to="/doctor/appointments" className="btn-secondary w-full justify-center py-1.5 text-xs">
+                          Review Request
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {pendingRequests.length > 5 && (
+                  <div className="p-4 border-t border-slate-100 text-center">
+                    <Link to="/doctor/appointments" className="text-sm font-bold text-blue-600 hover:text-blue-700">
+                      View all {pendingRequests.length} requests
+                    </Link>
                   </div>
                 )}
               </div>
             </div>
           </div>
-        )}
-      </main>
-    </div>
+
+        </div>
+      </div>
+    </DoctorLayout>
   );
 }

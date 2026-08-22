@@ -5,11 +5,11 @@ from flask import Blueprint, current_app, jsonify, request
 from flask_jwt_extended import get_jwt_identity
 
 from app.extensions import db
-from app.models import Appointment, AppointmentStatus, DoctorLeave, DoctorProfile, MedicationReminder
+from app.models import Appointment, AppointmentStatus, DoctorLeave, DoctorProfile, MedicationReminder, FollowUp
 from app.appointments.services import apply_doctor_leave
 from app.llm.service import generate_postvisit_summary
-from app.notifications.email_service import send_leave_notification
-from app.notifications.calendar_service import delete_events
+from app.notifications.email_service import send_leave_notification, send_appointment_confirmed, send_appointment_rejected
+from app.notifications.calendar_service import delete_events, create_events
 from app.utils.security import roles_required
 
 bp = Blueprint("doctor", __name__, url_prefix="/api/doctor")
@@ -77,9 +77,18 @@ def update_profile():
     if not profile:
         return jsonify({"error": "doctor profile not found"}), 404
     data = request.get_json(force=True)
+    
+    # Update base user fields
+    if "name" in data and data["name"].strip():
+        profile.user.name = data["name"].strip()
+    if "phone" in data:
+        profile.user.phone = data["phone"].strip() if data["phone"] else None
+        
+    # Update doctor profile fields
     for field in ["slot_duration_minutes", "working_start", "working_end", "working_days", "bio"]:
         if field in data:
             setattr(profile, field, data[field])
+            
     db.session.commit()
     return jsonify(profile.to_dict())
 
@@ -214,3 +223,108 @@ def submit_notes(appointment_id):
         db.session.commit()
 
     return jsonify(appointment.to_dict())
+
+
+@bp.post("/appointments/<appointment_id>/status")
+@roles_required("doctor")
+def update_status(appointment_id):
+    profile = _current_doctor_profile()
+    appointment = Appointment.query.get_or_404(appointment_id)
+    if appointment.doctor_id != profile.id:
+        return jsonify({"error": "forbidden"}), 403
+
+    data = request.get_json(force=True)
+    new_status = data.get("status")
+    
+    if new_status not in [AppointmentStatus.CONFIRMED.value, AppointmentStatus.REJECTED.value, AppointmentStatus.CANCELLED.value, AppointmentStatus.RESCHEDULED.value]:
+        return jsonify({"error": "invalid status"}), 400
+
+    # Prevent transitions from completed or cancelled back to active
+    if appointment.status in [AppointmentStatus.COMPLETED, AppointmentStatus.CANCELLED, AppointmentStatus.CANCELLED_BY_LEAVE, AppointmentStatus.REJECTED]:
+        return jsonify({"error": "cannot change status of inactive appointment"}), 400
+
+    appointment.status = AppointmentStatus(new_status)
+    db.session.commit()
+
+    if new_status == AppointmentStatus.CONFIRMED.value:
+        try:
+            create_events(appointment)
+        except Exception:
+            current_app.logger.exception("calendar event creation failed during confirm")
+        try:
+            send_appointment_confirmed(appointment)
+        except Exception:
+            current_app.logger.exception("confirm email failed")
+            
+    elif new_status in [AppointmentStatus.REJECTED.value, AppointmentStatus.CANCELLED.value]:
+        try:
+            delete_events(appointment)
+        except Exception:
+            current_app.logger.exception("calendar event deletion failed during reject/cancel")
+        try:
+            send_appointment_rejected(appointment) # reusing for cancel for simplicity
+        except Exception:
+            current_app.logger.exception("reject/cancel email failed")
+
+    return jsonify(appointment.to_dict())
+
+
+@bp.get("/patients")
+@roles_required("doctor")
+def my_patients():
+    profile = _current_doctor_profile()
+    if not profile:
+        return jsonify({"error": "doctor profile not found"}), 404
+        
+    # Get all unique patients that have had or have an appointment with this doctor
+    appts = Appointment.query.filter_by(doctor_id=profile.id).all()
+    
+    # Deduplicate patients
+    patients_map = {}
+    for a in appts:
+        if a.patient_id not in patients_map:
+            patients_map[a.patient_id] = {
+                "id": a.patient_id,
+                "name": a.patient.name,
+                "email": a.patient.email,
+                "phone": a.patient.phone,
+                "appointments": []
+            }
+        patients_map[a.patient_id]["appointments"].append(a.to_dict())
+        
+    # Sort appointments for each patient (newest first)
+    for p in patients_map.values():
+        p["appointments"].sort(key=lambda x: (x["appointment_date"], x["start_time"]), reverse=True)
+        
+    return jsonify(list(patients_map.values()))
+
+
+@bp.post("/appointments/<appointment_id>/followup")
+@roles_required("doctor")
+def recommend_followup(appointment_id):
+    profile = _current_doctor_profile()
+    appointment = Appointment.query.get_or_404(appointment_id)
+    if appointment.doctor_id != profile.id:
+        return jsonify({"error": "forbidden"}), 403
+
+    data = request.get_json(force=True)
+    try:
+        recommended_date = datetime.strptime(data["date"], "%Y-%m-%d").date()
+    except (KeyError, ValueError):
+        return jsonify({"error": "date must be YYYY-MM-DD"}), 400
+
+    # Ensure follow up is not in the past
+    if recommended_date < datetime.utcnow().date():
+        return jsonify({"error": "Follow up date cannot be in the past"}), 400
+
+    follow_up = FollowUp(
+        patient_id=appointment.patient_id,
+        doctor_id=appointment.doctor_id,
+        original_appointment_id=appointment.id,
+        recommended_date=recommended_date,
+        reason=data.get("reason", "")
+    )
+    db.session.add(follow_up)
+    db.session.commit()
+
+    return jsonify(follow_up.to_dict()), 201

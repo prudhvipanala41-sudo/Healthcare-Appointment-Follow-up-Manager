@@ -24,12 +24,14 @@ def create_app(config_object=Config):
     from app.auth.routes import bp as auth_bp
     from app.admin.routes import bp as admin_bp
     from app.patient.routes import bp as patient_bp
+    from app.hospitals.routes import bp as hospitals_bp
     from app.doctor.routes import bp as doctor_bp
     from app.calendar_routes import bp as calendar_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(patient_bp)
+    app.register_blueprint(hospitals_bp)
     app.register_blueprint(doctor_bp)
     app.register_blueprint(calendar_bp)
 

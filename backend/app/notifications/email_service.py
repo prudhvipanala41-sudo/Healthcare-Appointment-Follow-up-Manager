@@ -153,7 +153,30 @@ def retry_failed_emails(app):
 
 # ---- Templated helpers used by the booking/leave/reminder flows ----
 
-def send_booking_confirmation(appointment):
+def send_booking_pending(appointment):
+    patient = appointment.patient
+    doctor = appointment.doctor.user
+    when = f"{appointment.appointment_date} at {appointment.start_time}"
+
+    queue_and_send_email(
+        patient.email,
+        "Appointment Request Received",
+        f"Hi {patient.name},\n\nYour appointment request with Dr. {doctor.name} "
+        f"({appointment.doctor.specialisation}) for {when} has been received.\n\n"
+        "Your request is currently PENDING. You will receive another email once the doctor confirms your appointment.",
+        "booking_pending",
+    )
+    queue_and_send_email(
+        doctor.email,
+        "New Appointment Request",
+        f"Hi Dr. {doctor.name},\n\nYou have a new appointment request from {patient.name} for {when}.\n"
+        f"Symptom form: {'submitted' if appointment.symptoms_text else 'not yet submitted'}.\n"
+        "Please log in to your dashboard to confirm or reject this request.",
+        "booking_pending",
+    )
+
+
+def send_appointment_confirmed(appointment):
     patient = appointment.patient
     doctor = appointment.doctor.user
     when = f"{appointment.appointment_date} at {appointment.start_time}"
@@ -161,17 +184,25 @@ def send_booking_confirmation(appointment):
     queue_and_send_email(
         patient.email,
         "Appointment Confirmed",
-        f"Hi {patient.name},\n\nYour appointment with Dr. {doctor.name} "
-        f"({appointment.doctor.specialisation}) is confirmed for {when}.\n\n"
+        f"Hi {patient.name},\n\nGood news! Your appointment with Dr. {doctor.name} "
+        f"for {when} has been CONFIRMED.\n\n"
         "You'll get a reminder closer to the date. Reply to this email if you need to reschedule.",
         "booking_confirmation",
     )
+
+
+def send_appointment_rejected(appointment):
+    patient = appointment.patient
+    doctor = appointment.doctor.user
+    when = f"{appointment.appointment_date} at {appointment.start_time}"
+
     queue_and_send_email(
-        doctor.email,
-        "New Appointment Booked",
-        f"Hi Dr. {doctor.name},\n\nA new appointment with {patient.name} is booked for {when}.\n"
-        f"Symptom form: {'submitted' if appointment.symptoms_text else 'not yet submitted'}.",
-        "booking_confirmation",
+        patient.email,
+        "Appointment Request Declined",
+        f"Hi {patient.name},\n\nWe're sorry, but your appointment request with Dr. {doctor.name} "
+        f"for {when} could not be accepted at this time.\n\n"
+        "Please try booking a different time slot or with another doctor.",
+        "booking_rejected",
     )
 
 

@@ -3,7 +3,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request
 
 from app.extensions import db
-from app.models import DoctorLeave, DoctorProfile, Role, User
+from app.models import DoctorLeave, DoctorProfile, Role, User, Appointment, AppointmentStatus, Hospital
 from app.appointments.services import apply_doctor_leave
 from app.notifications.email_service import send_leave_notification
 from app.notifications.calendar_service import delete_events
@@ -138,3 +138,116 @@ def delete_leave(doctor_id, leave_id):
     db.session.delete(leave)
     db.session.commit()
     return jsonify({"message": "Leave removed."})
+
+
+# ────────────────────────────────────────────────────────────
+# Analytics & Users
+# ────────────────────────────────────────────────────────────
+
+@bp.get("/analytics")
+@roles_required("admin")
+def get_analytics():
+    total_patients = User.query.filter_by(role=Role.PATIENT).count()
+    total_doctors = DoctorProfile.query.count()
+    total_hospitals = Hospital.query.count()
+    total_appointments = Appointment.query.count()
+    
+    today = datetime.utcnow().date()
+    todays_appointments = Appointment.query.filter_by(appointment_date=today).count()
+    pending_verifications = DoctorProfile.query.filter_by(verification_status="Pending").count()
+    completed_consultations = Appointment.query.filter_by(status=AppointmentStatus.COMPLETED).count()
+    cancelled_appointments = Appointment.query.filter(
+        Appointment.status.in_([AppointmentStatus.CANCELLED, AppointmentStatus.CANCELLED_BY_LEAVE])
+    ).count()
+
+    return jsonify({
+        "total_patients": total_patients,
+        "total_doctors": total_doctors,
+        "total_hospitals": total_hospitals,
+        "total_appointments": total_appointments,
+        "todays_appointments": todays_appointments,
+        "pending_verifications": pending_verifications,
+        "completed_consultations": completed_consultations,
+        "cancelled_appointments": cancelled_appointments
+    })
+
+
+@bp.get("/users")
+@roles_required("admin")
+def list_users():
+    users = User.query.all()
+    return jsonify([u.to_dict() for u in users])
+
+
+@bp.delete("/users/<user_id>")
+@roles_required("admin")
+def delete_user(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.role == Role.ADMIN:
+        return jsonify({"error": "cannot delete an admin"}), 403
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({"message": "User deleted."})
+
+
+# ────────────────────────────────────────────────────────────
+# Hospitals
+# ────────────────────────────────────────────────────────────
+
+@bp.post("/hospitals")
+@roles_required("admin")
+def create_hospital():
+    data = request.get_json(force=True)
+    hospital = Hospital(
+        name=data.get("name"),
+        location=data.get("location"),
+        address=data.get("address", ""),
+        image_url=data.get("image_url", ""),
+        contact_phone=data.get("contact_phone", ""),
+        contact_email=data.get("contact_email", ""),
+        website=data.get("website", ""),
+        emergency_services=data.get("emergency_services", True),
+        specialities_text=data.get("specialities_text", "")
+    )
+    db.session.add(hospital)
+    db.session.commit()
+    return jsonify(hospital.to_dict()), 201
+
+
+@bp.put("/hospitals/<hospital_id>")
+@roles_required("admin")
+def update_hospital(hospital_id):
+    hospital = Hospital.query.get_or_404(hospital_id)
+    data = request.get_json(force=True)
+    
+    fields = [
+        "name", "location", "address", "image_url", "verification_status",
+        "contact_phone", "contact_email", "website", "emergency_services",
+        "specialities_text", "rating"
+    ]
+    for field in fields:
+        if field in data:
+            setattr(hospital, field, data[field])
+            
+    db.session.commit()
+    return jsonify(hospital.to_dict())
+
+
+@bp.delete("/hospitals/<hospital_id>")
+@roles_required("admin")
+def delete_hospital(hospital_id):
+    hospital = Hospital.query.get_or_404(hospital_id)
+    db.session.delete(hospital)
+    db.session.commit()
+    return jsonify({"message": "Hospital deleted."})
+
+
+# ────────────────────────────────────────────────────────────
+# Appointments
+# ────────────────────────────────────────────────────────────
+
+@bp.get("/appointments")
+@roles_required("admin")
+def list_appointments():
+    appts = Appointment.query.order_by(Appointment.appointment_date.desc()).all()
+    return jsonify([a.to_dict() for a in appts])
