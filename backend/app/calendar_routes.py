@@ -65,6 +65,27 @@ def test_email():
     return jsonify(result)
 
 
+@bp.get("/email-logs")
+def email_logs():
+    """Live audit trail of all emails dispatched by the system."""
+    from app.models import EmailLog
+    logs = EmailLog.query.order_by(EmailLog.created_at.desc()).limit(10).all()
+    return jsonify([
+        {
+            "id": l.id,
+            "to_email": l.to_email,
+            "subject": l.subject,
+            "category": l.category,
+            "status": l.status,
+            "attempts": l.attempts,
+            "last_error": l.last_error,
+            "created_at": l.created_at.isoformat() if l.created_at else None,
+        }
+        for l in logs
+    ])
+
+
+
 
 def _get_redirect_uri():
     """Returns the configured GOOGLE_REDIRECT_URI or dynamically constructs it with proxy headers."""
