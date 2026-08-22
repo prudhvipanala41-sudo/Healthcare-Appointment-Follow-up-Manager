@@ -11,6 +11,7 @@ import DoctorList from "./pages/patient/DoctorList";
 import PatientAppointments from "./pages/patient/PatientAppointments";
 import HospitalList from "./pages/patient/HospitalList";
 import HospitalDetail from "./pages/patient/HospitalDetail";
+import HealthRecords from "./pages/patient/HealthRecords";
 import DoctorDashboard from "./pages/doctor/DoctorDashboard";
 import DoctorAppointments from "./pages/doctor/DoctorAppointments";
 import DoctorPatients from "./pages/doctor/DoctorPatients";
@@ -84,6 +85,14 @@ export default function App() {
             }
           />
 
+          <Route
+            path="/patient/records"
+            element={
+              <Protected role="patient">
+                <HealthRecords />
+              </Protected>
+            }
+          />
           <Route
             path="/doctor"
             element={

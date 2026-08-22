@@ -14,6 +14,11 @@ export default function DoctorAppointments() {
   const [followUpAppointmentId, setFollowUpAppointmentId] = useState(null);
   const [followUpData, setFollowUpData] = useState({ date: "", reason: "" });
 
+  // Complete consultation modal state
+  const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
+  const [completeAppointmentId, setCompleteAppointmentId] = useState(null);
+  const [consultationData, setConsultationData] = useState({ notes: "", prescription: "" });
+
   useEffect(() => {
     fetchAppointments();
   }, []);
@@ -60,6 +65,22 @@ export default function DoctorAppointments() {
       setFollowUpAppointmentId(null);
       setFollowUpData({ date: "", reason: "" });
       alert("Follow-up recommended successfully.");
+    } catch (err) {
+      alert(errorMessage(err));
+    } finally {
+      setProcessingId(null);
+    }
+  }
+
+  async function handleCompleteSubmit(e) {
+    e.preventDefault();
+    try {
+      setProcessingId(completeAppointmentId);
+      const res = await api.post(`/api/doctor/appointments/${completeAppointmentId}/notes`, consultationData);
+      setAppointments(prev => prev.map(a => a.id === completeAppointmentId ? res.data : a));
+      setIsCompleteModalOpen(false);
+      setCompleteAppointmentId(null);
+      setConsultationData({ notes: "", prescription: "" });
     } catch (err) {
       alert(errorMessage(err));
     } finally {
@@ -173,7 +194,10 @@ export default function DoctorAppointments() {
                       {appt.status === "confirmed" && (
                         <>
                           <button 
-                            onClick={() => updateStatus(appt.id, "completed")}
+                            onClick={() => {
+                              setCompleteAppointmentId(appt.id);
+                              setIsCompleteModalOpen(true);
+                            }}
                             disabled={processingId === appt.id}
                             className="btn-secondary py-1.5 px-4 text-sm text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300 disabled:opacity-50"
                           >
@@ -250,6 +274,47 @@ export default function DoctorAppointments() {
         </div>
       )}
 
+      {/* Complete Consultation Modal */}
+      {isCompleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg my-8 overflow-hidden">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-emerald-50">
+              <h2 className="font-display font-bold text-xl text-emerald-900">Complete Consultation</h2>
+              <button onClick={() => setIsCompleteModalOpen(false)} className="text-emerald-400 hover:text-emerald-600 text-xl">&times;</button>
+            </div>
+            
+            <form onSubmit={handleCompleteSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1">Clinical Notes (Required)</label>
+                <textarea 
+                  required 
+                  rows="4"
+                  value={consultationData.notes} 
+                  onChange={e => setConsultationData({...consultationData, notes: e.target.value})} 
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-emerald-500 resize-none" 
+                  placeholder="Enter diagnosis, observations, etc..."
+                ></textarea>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1">Prescription (Optional)</label>
+                <textarea 
+                  rows="3"
+                  value={consultationData.prescription} 
+                  onChange={e => setConsultationData({...consultationData, prescription: e.target.value})} 
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-emerald-500 resize-none" 
+                  placeholder="e.g. Paracetamol - twice daily for 5 days"
+                ></textarea>
+                <p className="text-xs text-slate-500 mt-1">We will automatically extract medication reminders from phrases like "twice daily for 5 days".</p>
+              </div>
+              
+              <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <button type="button" onClick={() => setIsCompleteModalOpen(false)} className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg">Cancel</button>
+                <button type="submit" disabled={processingId !== null} className="btn-primary bg-emerald-600 hover:bg-emerald-700 px-6 disabled:opacity-50">Mark as Completed</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </DoctorLayout>
   );
 }

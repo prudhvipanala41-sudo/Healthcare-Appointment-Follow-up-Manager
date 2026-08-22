@@ -226,7 +226,7 @@ def cancel(appointment_id):
     appointment = Appointment.query.get_or_404(appointment_id)
     if appointment.patient_id != get_jwt_identity():
         return jsonify({"error": "forbidden"}), 403
-    if appointment.status != AppointmentStatus.BOOKED:
+    if appointment.status not in [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED]:
         return jsonify({"error": "appointment is not active"}), 400
 
     cancel_appointment(appointment)
@@ -253,3 +253,24 @@ def get_journey():
         "completed_appointments": [a.to_dict() for a in past_appointments],
         "follow_ups": [f.to_dict() for f in follow_ups]
     })
+
+@bp.get("/records")
+@roles_required("patient")
+def get_records():
+    patient_id = get_jwt_identity()
+    appts = Appointment.query.filter_by(patient_id=patient_id, status=AppointmentStatus.COMPLETED).order_by(Appointment.appointment_date.desc()).all()
+    return jsonify([a.to_dict() for a in appts])
+
+@bp.get("/hospitals")
+@roles_required("patient", "admin")
+def get_hospitals():
+    from app.models import Hospital
+    hospitals = Hospital.query.all()
+    return jsonify([h.to_dict() for h in hospitals])
+
+@bp.get("/hospitals/<hospital_id>")
+@roles_required("patient", "admin")
+def get_hospital(hospital_id):
+    from app.models import Hospital
+    hospital = Hospital.query.get_or_404(hospital_id)
+    return jsonify(hospital.to_dict())

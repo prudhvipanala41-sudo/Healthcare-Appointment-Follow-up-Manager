@@ -13,7 +13,7 @@ export default function HospitalDetail() {
     async function fetchHospital() {
       try {
         setLoading(true);
-        const res = await api.get(`/api/hospitals/${id}`);
+        const res = await api.get(`/api/patient/hospitals/${id}`);
         setHospital(res.data);
       } catch (err) {
         setError(errorMessage(err));

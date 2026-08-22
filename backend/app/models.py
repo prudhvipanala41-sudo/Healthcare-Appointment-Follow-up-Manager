@@ -183,6 +183,8 @@ class Appointment(db.Model):
             "doctor_id": self.doctor_id,
             "doctor_name": self.doctor.user.name if self.doctor else None,
             "specialisation": self.doctor.specialisation if self.doctor else None,
+            "hospital_name": self.doctor.hospital_name if self.doctor else None,
+            "consultation_mode": self.doctor.consultation_mode if self.doctor else None,
             "appointment_date": self.appointment_date.isoformat(),
             "start_time": self.start_time,
             "end_time": self.end_time,

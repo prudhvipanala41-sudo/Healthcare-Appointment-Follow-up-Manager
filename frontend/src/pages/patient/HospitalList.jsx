@@ -19,7 +19,7 @@ export default function HospitalList() {
       if (search) params.append("location", search);
       if (specialty) params.append("specialty", specialty);
       
-      const res = await api.get(`/api/hospitals?${params.toString()}`);
+      const res = await api.get(`/api/patient/hospitals?${params.toString()}`);
       setHospitals(res.data);
     } catch (err) {
       console.error(errorMessage(err));

@@ -59,9 +59,9 @@ export default function PatientAppointments() {
     }
   }
 
-  const booked = appointments.filter((a) => a.status === "booked").length;
+  const booked = appointments.filter((a) => a.status === "pending" || a.status === "confirmed").length;
   const completed = appointments.filter((a) => a.status === "completed").length;
-  const cancelled = appointments.filter((a) => a.status.startsWith("cancelled")).length;
+  const cancelled = appointments.filter((a) => a.status === "cancelled" || a.status === "cancelled_by_leave" || a.status === "rejected").length;
 
   return (
     <div className="min-h-screen bg-slate-50 font-body pb-20">
@@ -148,13 +148,13 @@ export default function PatientAppointments() {
         ) : (
           <div className="space-y-6">
             {appointments.map((appt) => {
-              const aiAnalysis = safeParseJSON(appt.symptoms_analysis);
-              const isUpcoming = appt.status === "booked";
+              const aiAnalysis = safeParseJSON(appt.previsit_summary);
+              const isUpcoming = appt.status === "pending" || appt.status === "confirmed";
               
-              const d = new Date(appt.date);
+              const d = new Date(appt.appointment_date);
               const month = d.toLocaleDateString('en-US', { month: 'short' });
               const day = d.getDate();
-              const time = appt.time.substring(0,5);
+              const time = appt.start_time.substring(0,5);
               
               return (
                 <div key={appt.id} className={`bg-white rounded-3xl border ${isUpcoming ? 'border-blue-200 shadow-md shadow-blue-100' : 'border-slate-200 shadow-sm'} overflow-hidden relative group`}>
@@ -172,11 +172,11 @@ export default function PatientAppointments() {
                         <h3 className="font-display font-bold text-slate-900 text-xl mb-1">Dr. {appt.doctor_name}</h3>
                         <p className="text-slate-600 flex items-center gap-2 font-medium">
                           <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                          {appt.hospital_name}
+                          {appt.hospital_name || "Clinic"}
                         </p>
                         <div className="flex flex-wrap gap-2 mt-3">
-                          <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider ${appt.consultation_mode === 'online' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                            {appt.consultation_mode === 'online' ? 'Video Call' : 'In Clinic'}
+                          <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider ${appt.consultation_mode === 'Online' || appt.consultation_mode === 'Online & In-Clinic' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                            {appt.consultation_mode === 'Online' || appt.consultation_mode === 'Online & In-Clinic' ? 'Video Call' : 'In Clinic'}
                           </span>
                           <StatusBadge status={appt.status} />
                         </div>
@@ -200,7 +200,7 @@ export default function PatientAppointments() {
                   {/* Appt Body */}
                   <div className="px-8 py-6">
                     {/* Symptoms Input */}
-                    {isUpcoming && !appt.symptoms && (
+                    {isUpcoming && !appt.symptoms_text && (
                       <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 mb-2 flex flex-col md:flex-row gap-6 items-start shadow-sm">
                         <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-2xl shrink-0">💡</div>
                         <div className="flex-1 w-full">
@@ -222,10 +222,10 @@ export default function PatientAppointments() {
                     )}
 
                     {/* Symptoms Display */}
-                    {appt.symptoms && (
+                    {appt.symptoms_text && (
                       <div className="mb-6">
                         <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">Reported Symptoms</h4>
-                        <p className="text-slate-800 bg-slate-50 p-4 rounded-xl font-medium border border-slate-200">{appt.symptoms}</p>
+                        <p className="text-slate-800 bg-slate-50 p-4 rounded-xl font-medium border border-slate-200">{appt.symptoms_text}</p>
                       </div>
                     )}
 
