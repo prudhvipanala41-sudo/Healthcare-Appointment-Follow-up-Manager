@@ -17,6 +17,10 @@ def create_app(config_object=Config):
     mail.init_app(app)
     cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
 
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
+
     from app.auth.routes import bp as auth_bp
     from app.admin.routes import bp as admin_bp
     from app.patient.routes import bp as patient_bp

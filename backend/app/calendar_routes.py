@@ -67,11 +67,14 @@ def test_email():
 
 
 def _get_redirect_uri():
-    """Construct redirect URI from the actual request host.
-    Always use https:// in production (Render terminates TLS at the proxy)."""
-    host = request.host  # e.g. healthcare-appointment-follow-up-manager-xpk2.onrender.com
-    scheme = "http" if ("localhost" in host or "127.0.0.1" in host) else "https"
-    return f"{scheme}://{host}/api/calendar/oauth2callback"
+    """Returns the configured GOOGLE_REDIRECT_URI or dynamically constructs it with proxy headers."""
+    configured = current_app.config.get("GOOGLE_REDIRECT_URI")
+    if configured and configured.startswith("http"):
+        return configured.strip()
+    host = request.headers.get("X-Forwarded-Host", request.host)
+    proto = request.headers.get("X-Forwarded-Proto", "https" if not ("localhost" in host or "127.0.0.1" in host) else "http")
+    return f"{proto}://{host}/api/calendar/oauth2callback"
+
 
 
 def _flow():
