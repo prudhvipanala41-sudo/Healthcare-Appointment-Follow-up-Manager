@@ -146,7 +146,7 @@ class Appointment(db.Model):
     start_time = db.Column(db.String(5), nullable=False)  # HH:MM
     end_time = db.Column(db.String(5), nullable=False)
 
-    status = db.Column(db.Enum(AppointmentStatus, values_callable=lambda obj: [e.value for e in obj]), default=AppointmentStatus.PENDING, nullable=False)
+    status = db.Column(db.Enum(AppointmentStatus), default=AppointmentStatus.PENDING, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Pre-visit
