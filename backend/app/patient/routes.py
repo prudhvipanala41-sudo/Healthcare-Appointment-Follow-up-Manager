@@ -78,20 +78,24 @@ def get_doctor_detail(doctor_id):
 @bp.get("/doctors/<doctor_id>/slots")
 @roles_required("patient", "admin")
 def doctor_slots(doctor_id):
-    date_str = request.args.get("date")
-    if not date_str:
-        return jsonify({"error": "date query param (YYYY-MM-DD) is required"}), 400
     try:
-        target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-    except ValueError:
-        return jsonify({"error": "date must be YYYY-MM-DD"}), 400
+        date_str = request.args.get("date")
+        if not date_str:
+            return jsonify({"error": "date query param (YYYY-MM-DD) is required"}), 400
+        try:
+            target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            return jsonify({"error": "date must be YYYY-MM-DD"}), 400
 
-    # Reject past dates
-    if target_date < date.today():
-        return jsonify({"date": date_str, "slots": [], "reason": "past_date"})
+        # Reject past dates
+        if target_date < date.today():
+            return jsonify({"date": date_str, "slots": [], "reason": "past_date"})
 
-    doctor = DoctorProfile.query.get_or_404(doctor_id)
-    return jsonify({"date": date_str, "slots": generate_available_slots(doctor, target_date)})
+        doctor = DoctorProfile.query.get_or_404(doctor_id)
+        return jsonify({"date": date_str, "slots": generate_available_slots(doctor, target_date)})
+    except Exception as e:
+        import traceback
+        return jsonify({"error": str(e), "traceback": traceback.format_exc()}), 500
 
 
 @bp.post("/doctors/<doctor_id>/hold")
