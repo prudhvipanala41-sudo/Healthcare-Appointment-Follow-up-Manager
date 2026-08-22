@@ -88,13 +88,13 @@ def email_logs():
 
 
 def _get_redirect_uri():
-    """Returns the configured GOOGLE_REDIRECT_URI or dynamically constructs it with proxy headers."""
-    configured = current_app.config.get("GOOGLE_REDIRECT_URI")
-    if configured and configured.startswith("http"):
-        return configured.strip()
+    """Guaranteed production redirect URI matching Google Cloud Console exactly."""
     host = request.headers.get("X-Forwarded-Host", request.host)
-    proto = request.headers.get("X-Forwarded-Proto", "https" if not ("localhost" in host or "127.0.0.1" in host) else "http")
-    return f"{proto}://{host}/api/calendar/oauth2callback"
+    if "localhost" in host or "127.0.0.1" in host:
+        return "http://localhost:5000/api/calendar/oauth2callback"
+    # In all production environments, return the exact registered Render HTTPS URL:
+    return "https://healthcare-appointment-follow-up-manager-xpk2.onrender.com/api/calendar/oauth2callback"
+
 
 
 

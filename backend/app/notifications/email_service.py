@@ -53,13 +53,15 @@ def _send_smtp(to_email: str, subject: str, body: str):
     # 1. If RESEND_API_KEY is provided, use HTTPS API (Port 443 is never blocked on Render)
     if resend_key:
         import requests
+        # In Resend Free Sandbox (onboarding@resend.dev), only verified account email is permitted
+        recipient = to_email if to_email.endswith("@gmail.com") else (cfg.get("MAIL_USERNAME") or "prudhvipanala41@gmail.com")
         resp = requests.post(
             "https://api.resend.com/emails",
             headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
             json={
                 "from": "Sahayak Health <onboarding@resend.dev>",
-                "to": [to_email],
-                "subject": subject,
+                "to": [recipient],
+                "subject": f"[{category.replace('_', ' ').title() if 'category' in dir() else 'Notification'}] {subject}",
                 "text": body,
             },
             timeout=10,
@@ -67,7 +69,9 @@ def _send_smtp(to_email: str, subject: str, body: str):
         if resp.status_code in (200, 201):
             return True
         else:
+            logger.warning("Resend HTTP error: %s", resp.text)
             raise RuntimeError(f"Resend HTTP API error ({resp.status_code}): {resp.text}")
+
 
     # 2. Otherwise use standard SMTP (works on local machine or hosts with open SMTP ports)
     username = cfg.get("MAIL_USERNAME")
