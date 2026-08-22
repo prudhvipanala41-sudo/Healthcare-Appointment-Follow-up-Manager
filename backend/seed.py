@@ -40,7 +40,7 @@ with app.app_context():
             working_days="0,1,2,3,4,5",
         ))
 
-        patient = User(name="Demo Patient", email="patient@demo.com", role=Role.PATIENT)
+        patient = User(name="Demo Patient", email="prudhvipanala41@gmail.com", role=Role.PATIENT)
         patient.set_password("Patient@123")
         db.session.add(patient)
 
