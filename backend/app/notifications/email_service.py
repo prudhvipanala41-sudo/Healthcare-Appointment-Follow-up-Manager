@@ -14,6 +14,7 @@ background APScheduler job (see notifications/scheduler.py) retries "failed"
 and "pending" rows with exponential backoff up to a max number of attempts.
 """
 import logging
+import os
 
 from flask import current_app
 from flask_mail import Message
