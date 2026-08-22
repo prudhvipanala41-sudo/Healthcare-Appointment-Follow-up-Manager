@@ -141,45 +141,49 @@ def book(doctor_id):
     doctor = DoctorProfile.query.get_or_404(doctor_id)
 
     try:
-        appointment = book_appointment(doctor, patient_id, target_date, start_time, data.get("hold_id"))
-    except BookingError as e:
-        return jsonify({"error": e.message}), e.status_code
+        try:
+            appointment = book_appointment(doctor, patient_id, target_date, start_time, data.get("hold_id"))
+        except BookingError as e:
+            return jsonify({"error": e.message}), e.status_code
 
-    import threading
-    def _generate_async(app, appt_id, text):
-        with app.app_context():
-            from app.models import Appointment
-            from app.extensions import db
-            from app.llm.service import generate_previsit_summary
-            import json
+        import threading
+        def _generate_async(app, appt_id, text):
+            with app.app_context():
+                from app.models import Appointment
+                from app.extensions import db
+                from app.llm.service import generate_previsit_summary
+                import json
+                
+                summary, failed = generate_previsit_summary(text)
+                appt = Appointment.query.get(appt_id)
+                if appt:
+                    appt.previsit_summary_json = json.dumps(summary)
+                    appt.previsit_llm_failed = failed
+                    db.session.commit()
+
+        # Save symptoms and generate pre-visit summary if provided at booking time
+        if symptoms:
+            appointment.symptoms_text = symptoms
+            db.session.commit()
             
-            summary, failed = generate_previsit_summary(text)
-            appt = Appointment.query.get(appt_id)
-            if appt:
-                appt.previsit_summary_json = json.dumps(summary)
-                appt.previsit_llm_failed = failed
-                db.session.commit()
+            # Run LLM generation in background so the booking request returns instantly
+            app = current_app._get_current_object()
+            threading.Thread(target=_generate_async, args=(app, appointment.id, symptoms)).start()
 
-    # Save symptoms and generate pre-visit summary if provided at booking time
-    if symptoms:
-        appointment.symptoms_text = symptoms
-        db.session.commit()
-        
-        # Run LLM generation in background so the booking request returns instantly
-        app = current_app._get_current_object()
-        threading.Thread(target=_generate_async, args=(app, appointment.id, symptoms)).start()
+        # Best-effort side effects — never let these fail the booking itself.
+        try:
+            send_booking_confirmation(appointment)
+        except Exception:
+            current_app.logger.exception("booking confirmation email failed")
+        try:
+            create_events(appointment)
+        except Exception:
+            current_app.logger.exception("calendar event creation failed")
 
-    # Best-effort side effects — never let these fail the booking itself.
-    try:
-        send_booking_confirmation(appointment)
-    except Exception:
-        current_app.logger.exception("booking confirmation email failed")
-    try:
-        create_events(appointment)
-    except Exception:
-        current_app.logger.exception("calendar event creation failed")
-
-    return jsonify(appointment.to_dict()), 201
+        return jsonify({"message": "Appointment booked successfully", "appointment_id": appointment.id}), 201
+    except Exception as e:
+        import traceback
+        return jsonify({"error": str(e), "traceback": traceback.format_exc()}), 500
 
 
 @bp.post("/appointments/<appointment_id>/symptoms")
