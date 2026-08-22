@@ -20,10 +20,11 @@ SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 
 
 def _get_redirect_uri():
-    """Always construct the redirect URI from the actual incoming request host.
-    This makes it work correctly on any deployment (local, Render, etc.)
-    without relying on environment variables."""
-    return request.host_url.rstrip("/") + "/api/calendar/oauth2callback"
+    """Construct redirect URI from the actual request host.
+    Always use https:// in production (Render terminates TLS at the proxy)."""
+    host = request.host  # e.g. healthcare-appointment-follow-up-manager-xpk2.onrender.com
+    scheme = "http" if ("localhost" in host or "127.0.0.1" in host) else "https"
+    return f"{scheme}://{host}/api/calendar/oauth2callback"
 
 
 def _flow():
