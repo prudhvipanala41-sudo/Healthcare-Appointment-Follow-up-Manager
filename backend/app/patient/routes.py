@@ -18,11 +18,57 @@ bp = Blueprint("patient", __name__, url_prefix="/api/patient")
 @bp.get("/doctors")
 @roles_required("patient", "admin")
 def search_doctors():
+    search = request.args.get("search", "").strip()
     specialisation = request.args.get("specialisation", "").strip()
-    q = DoctorProfile.query
-    if specialisation:
+    location = request.args.get("location", "").strip()
+    mode = request.args.get("mode", "").strip()
+    sort_by = request.args.get("sort_by", "").strip()
+
+    q = DoctorProfile.query.join(DoctorProfile.user)
+
+    if search:
+        search_pattern = f"%{search}%"
+        from sqlalchemy import or_
+        from app.models import User
+        q = q.filter(
+            or_(
+                User.name.ilike(search_pattern),
+                DoctorProfile.specialisation.ilike(search_pattern),
+                DoctorProfile.hospital_name.ilike(search_pattern),
+                DoctorProfile.location.ilike(search_pattern),
+                DoctorProfile.expertise.ilike(search_pattern),
+            )
+        )
+
+    if specialisation and specialisation.lower() != "all":
         q = q.filter(DoctorProfile.specialisation.ilike(f"%{specialisation}%"))
+
+    if location and location.lower() != "all":
+        q = q.filter(DoctorProfile.location.ilike(f"%{location}%"))
+
+    if mode and mode.lower() != "all":
+        q = q.filter(DoctorProfile.consultation_mode.ilike(f"%{mode}%"))
+
+    if sort_by == "rating":
+        q = q.order_by(DoctorProfile.rating.desc())
+    elif sort_by == "experience":
+        q = q.order_by(DoctorProfile.experience_years.desc())
+    elif sort_by == "fee_asc":
+        q = q.order_by(DoctorProfile.consultation_fee.asc())
+    elif sort_by == "fee_desc":
+        q = q.order_by(DoctorProfile.consultation_fee.desc())
+    else:
+        q = q.order_by(DoctorProfile.rating.desc())
+
     return jsonify([d.to_dict() for d in q.all()])
+
+
+@bp.get("/doctors/<doctor_id>")
+@roles_required("patient", "admin")
+def get_doctor_detail(doctor_id):
+    doctor = DoctorProfile.query.get_or_404(doctor_id)
+    return jsonify(doctor.to_dict())
+
 
 
 @bp.get("/doctors/<doctor_id>/slots")

@@ -62,7 +62,21 @@ class DoctorProfile(db.Model):
     working_start = db.Column(db.String(5), nullable=False, default="09:00")  # HH:MM
     working_end = db.Column(db.String(5), nullable=False, default="17:00")
     working_days = db.Column(db.String(20), nullable=False, default="0,1,2,3,4")  # Mon=0 .. Sun=6
-    bio = db.Column(db.Text, default="")
+    qualifications = db.Column(db.String(255), default="MBBS, MD")
+    experience_years = db.Column(db.Integer, default=10)
+    hospital_name = db.Column(db.String(255), default="City Multispeciality Hospital")
+    location = db.Column(db.String(100), default="Bengaluru")
+    consultation_fee = db.Column(db.Integer, default=800)
+    consultation_mode = db.Column(db.String(50), default="Online & In-Clinic")
+    languages = db.Column(db.String(255), default="English, Hindi")
+    expertise = db.Column(db.Text, default="")
+    research_interests = db.Column(db.Text, default="")
+    publications = db.Column(db.Text, default="")
+    rating = db.Column(db.Float, default=4.8)
+    review_count = db.Column(db.Integer, default=45)
+    verification_status = db.Column(db.String(50), default="Verified Specialist")
+    image_url = db.Column(db.String(500), default="")
+    source_url = db.Column(db.String(500), default="")
 
     leaves = db.relationship("DoctorLeave", backref="doctor", cascade="all, delete-orphan")
 
@@ -70,15 +84,31 @@ class DoctorProfile(db.Model):
         return {
             "id": self.id,
             "user_id": self.user_id,
-            "name": self.user.name,
-            "email": self.user.email,
+            "name": self.user.name if self.user else "",
+            "email": self.user.email if self.user else "",
             "specialisation": self.specialisation,
             "slot_duration_minutes": self.slot_duration_minutes,
             "working_start": self.working_start,
             "working_end": self.working_end,
             "working_days": self.working_days,
-            "bio": self.bio,
+            "bio": self.bio or "",
+            "qualifications": self.qualifications or "MBBS, MD",
+            "experience_years": self.experience_years or 10,
+            "hospital_name": self.hospital_name or "City Multispeciality Hospital",
+            "location": self.location or "Bengaluru",
+            "consultation_fee": self.consultation_fee or 800,
+            "consultation_mode": self.consultation_mode or "Online & In-Clinic",
+            "languages": self.languages or "English, Hindi",
+            "expertise": self.expertise or "",
+            "research_interests": self.research_interests or "",
+            "publications": self.publications or "",
+            "rating": round(float(self.rating or 4.8), 1),
+            "review_count": self.review_count or 45,
+            "verification_status": self.verification_status or "Verified Specialist",
+            "image_url": self.image_url or "",
+            "source_url": self.source_url or "",
         }
+
 
 
 class DoctorLeave(db.Model):

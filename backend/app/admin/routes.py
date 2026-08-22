@@ -35,6 +35,20 @@ def create_doctor():
         working_end=data.get("working_end", "17:00"),
         working_days=data.get("working_days", "0,1,2,3,4"),
         bio=data.get("bio", ""),
+        qualifications=data.get("qualifications", "MBBS, MD"),
+        experience_years=data.get("experience_years", 10),
+        hospital_name=data.get("hospital_name", "City Multispeciality Hospital"),
+        location=data.get("location", "Bengaluru"),
+        consultation_fee=data.get("consultation_fee", 800),
+        consultation_mode=data.get("consultation_mode", "Online & In-Clinic"),
+        languages=data.get("languages", "English, Hindi"),
+        expertise=data.get("expertise", ""),
+        research_interests=data.get("research_interests", ""),
+        publications=data.get("publications", ""),
+        rating=data.get("rating", 4.8),
+        review_count=data.get("review_count", 50),
+        verification_status=data.get("verification_status", "Verified Specialist"),
+        source_url=data.get("source_url", ""),
     )
     db.session.add(profile)
     db.session.commit()
@@ -52,11 +66,18 @@ def list_doctors():
 def update_doctor(doctor_id):
     profile = DoctorProfile.query.get_or_404(doctor_id)
     data = request.get_json(force=True)
-    for field in ["specialisation", "slot_duration_minutes", "working_start", "working_end", "working_days", "bio"]:
+    fields = [
+        "specialisation", "slot_duration_minutes", "working_start", "working_end", "working_days", "bio",
+        "qualifications", "experience_years", "hospital_name", "location", "consultation_fee",
+        "consultation_mode", "languages", "expertise", "research_interests", "publications",
+        "rating", "review_count", "verification_status", "source_url"
+    ]
+    for field in fields:
         if field in data:
             setattr(profile, field, data[field])
     db.session.commit()
     return jsonify(profile.to_dict())
+
 
 
 @bp.delete("/doctors/<doctor_id>")
