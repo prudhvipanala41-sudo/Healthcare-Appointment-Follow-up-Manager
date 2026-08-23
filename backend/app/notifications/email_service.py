@@ -80,8 +80,8 @@ def _send_smtp(to_email: str, subject: str, body: str):
         if resp.status_code in (200, 201):
             return True
         else:
-            logger.warning("Resend HTTP error: %s", resp.text)
-            raise RuntimeError(f"Resend HTTP API error ({resp.status_code}): {resp.text}")
+            logger.warning("Resend API rejected the email (likely due to Sandbox restrictions): %s. Falling back to standard SMTP.", resp.text)
+            # Do not raise here; allow the code to fall through to the SMTP block below
 
 
     # 2. Otherwise use standard SMTP (works on local machine or hosts with open SMTP ports)
