@@ -36,12 +36,7 @@ def _attempt_send_background(log_id: int, app):
             _attempt_send(log)
 
 def queue_and_send_email(to_email: str, subject: str, body: str, category: str):
-    # Route fake demo accounts (@demo.com, @clinic.com) to the real MAIL_USERNAME so emails land in your inbox!
     target_email = to_email
-    mail_user = current_app.config.get("MAIL_USERNAME")
-    if mail_user and ("@demo.com" in to_email or "@clinic.com" in to_email or "@example.com" in to_email):
-        target_email = mail_user
-        logger.info("Routing demo email recipient %s -> verified inbox %s", to_email, target_email)
 
     log = EmailLog(to_email=target_email, subject=subject, body=body, category=category, status="pending")
     db.session.add(log)
