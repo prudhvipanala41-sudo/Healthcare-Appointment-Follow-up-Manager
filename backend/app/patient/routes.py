@@ -29,33 +29,9 @@ def debug_enum():
 def migrate_enum():
     from sqlalchemy import text
     try:
-        with db.engine.connect() as conn:
-            res = conn.execute(text("SELECT enumlabel FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE typname = 'appointmentstatus';"))
-            labels = [row[0] for row in res]
-
-        new_values = [
-            "PENDING", "CONFIRMED", "REJECTED", "CANCELLED", "COMPLETED", "RESCHEDULED",
-            "pending", "confirmed", "rejected", "cancelled", "completed", "rescheduled"
-        ]
-
-        added = []
-        errors = []
-        for val in new_values:
-            if val not in labels:
-                try:
-                    # ALTER TYPE must run outside a transaction — use execution_options autocommit
-                    with db.engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
-                        conn.execute(text(f"ALTER TYPE appointmentstatus ADD VALUE IF NOT EXISTS '{val}';"))
-                    added.append(val)
-                except Exception as e:
-                    errors.append(f"{val}: {str(e)}")
-
-        # Refresh label list after changes
-        with db.engine.connect() as conn:
-            res = conn.execute(text("SELECT enumlabel FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE typname = 'appointmentstatus';"))
-            labels_after = [row[0] for row in res]
-
-        return jsonify({"added": added, "errors": errors, "before": labels, "after": labels_after})
+        with db.engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+            conn.execute(text("ALTER TABLE appointments ALTER COLUMN status TYPE VARCHAR(50) USING status::text;"))
+        return jsonify({"message": "Successfully altered status to VARCHAR"})
     except Exception as e:
         import traceback
         return jsonify({"error": str(e), "traceback": traceback.format_exc()}), 500
