@@ -165,7 +165,54 @@ export default function DoctorAppointments() {
                         </div>
                         {appt.symptoms_text && (
                           <div className="mt-3 p-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-600">
-                            <strong>Symptoms:</strong> {appt.symptoms_text}
+                            <strong>Symptoms (Raw):</strong> {appt.symptoms_text}
+                          </div>
+                        )}
+                        {appt.previsit_summary && (
+                          <div className="mt-3 p-4 bg-blue-50 border border-blue-100 rounded-lg text-sm text-slate-700">
+                            <div className="flex items-center gap-2 mb-2 font-bold text-blue-900">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
+                              AI Pre-Visit Summary
+                            </div>
+                            {(() => {
+                              try {
+                                const summary = JSON.parse(appt.previsit_summary);
+                                return (
+                                  <div className="space-y-2">
+                                    <p><span className="font-medium text-slate-900">Urgency:</span> <span className={summary.urgency === 'High' ? 'text-rose-600 font-bold' : summary.urgency === 'Medium' ? 'text-orange-500 font-bold' : 'text-emerald-600 font-bold'}>{summary.urgency || 'Unknown'}</span></p>
+                                    <p><span className="font-medium text-slate-900">Chief Complaint:</span> {summary.chief_complaint}</p>
+                                    {summary.suggested_questions && summary.suggested_questions.length > 0 && (
+                                      <div>
+                                        <span className="font-medium text-slate-900">Suggested Questions:</span>
+                                        <ul className="list-disc list-inside mt-1 ml-1 space-y-1">
+                                          {summary.suggested_questions.map((q, i) => (
+                                            <li key={i}>{q}</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                    {appt.previsit_llm_failed && summary.note && (
+                                      <p className="text-xs text-rose-500 mt-2 italic">{summary.note}</p>
+                                    )}
+                                  </div>
+                                );
+                              } catch (e) {
+                                return <p>{appt.previsit_summary}</p>;
+                              }
+                            })()}
+                          </div>
+                        )}
+                        {appt.postvisit_summary && (
+                          <div className="mt-3 p-4 bg-emerald-50 border border-emerald-100 rounded-lg text-sm text-slate-700">
+                            <div className="flex items-center gap-2 mb-2 font-bold text-emerald-900">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              AI Post-Visit Summary
+                            </div>
+                            <div className="whitespace-pre-line">{appt.postvisit_summary}</div>
                           </div>
                         )}
                       </div>
