@@ -11,7 +11,6 @@ from app.utils.security import roles_required
 
 bp = Blueprint("admin", __name__, url_prefix="/api/admin")
 
-
 @bp.post("/doctors")
 @roles_required("admin")
 def create_doctor():

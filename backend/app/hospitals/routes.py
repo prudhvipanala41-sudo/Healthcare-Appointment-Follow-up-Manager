@@ -3,7 +3,7 @@ from app.models import Hospital
 
 bp = Blueprint("hospitals", __name__, url_prefix="/api/hospitals")
 
-@bp.get("/")
+@bp.get("", strict_slashes=False)
 def list_hospitals():
     """List hospitals with optional filtering."""
     q = Hospital.query

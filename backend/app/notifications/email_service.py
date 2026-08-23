@@ -154,10 +154,10 @@ def send_booking_pending(appointment):
 
     queue_and_send_email(
         patient.email,
-        "Appointment Request Received",
+        "Action Required: Appointment Request Pending",
         f"Hi {patient.name},\n\nYour appointment request with Dr. {doctor.name} "
         f"({appointment.doctor.specialisation}) for {when} has been received.\n\n"
-        "Your request is currently PENDING. You will receive another email once the doctor confirms your appointment.",
+        "Your request is currently PENDING. It is NOT confirmed yet. You will receive another email once the doctor confirms your appointment.",
         "booking_pending",
     )
     queue_and_send_email(

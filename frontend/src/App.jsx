@@ -21,6 +21,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminHospitals from "./pages/admin/AdminHospitals";
 import AdminVerification from "./pages/admin/AdminVerification";
+import AdminAppointments from "./pages/admin/AdminAppointments";
 import Footer from "./components/Footer";
 
 function Protected({ role, children }) {
@@ -162,6 +163,14 @@ export default function App() {
             element={
               <Protected role="admin">
                 <AdminVerification />
+              </Protected>
+            }
+          />
+          <Route
+            path="/admin/appointments"
+            element={
+              <Protected role="admin">
+                <AdminAppointments />
               </Protected>
             }
           />
