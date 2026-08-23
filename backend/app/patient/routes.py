@@ -165,6 +165,13 @@ def book(doctor_id):
     try:
         try:
             appointment = book_appointment(doctor, patient_id, target_date, start_time, data.get("hold_id"))
+            
+            # Log successful appointment creation securely
+            current_app.logger.info(
+                f"[APPOINTMENT] User ID: {patient_id} | "
+                f"Patient Email: {appointment.patient.email} | "
+                f"Appointment ID: {appointment.id}"
+            )
         except BookingError as e:
             return jsonify({"error": e.message}), e.status_code
 

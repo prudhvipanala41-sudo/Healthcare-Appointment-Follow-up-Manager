@@ -41,7 +41,7 @@ def queue_and_send_email(to_email: str, subject: str, body: str, category: str):
     log = EmailLog(to_email=target_email, subject=subject, body=body, category=category, status="pending")
     db.session.add(log)
     db.session.commit()
-    logger.info("Dispatched email log #%s to %s (Subject: '%s', Category: %s)", log.id, target_email, subject, category)
+    logger.info(f"[EMAIL] Sending appointment confirmation to: {target_email} (Log ID: {log.id}, Category: {category})")
     
     # Send email asynchronously in a background thread to prevent blocking the API response
     app = current_app._get_current_object()
@@ -62,11 +62,10 @@ def _send_smtp(to_email: str, subject: str, body: str):
     cfg = current_app.config
     resend_key = cfg.get("RESEND_API_KEY") or os.getenv("RESEND_API_KEY")
 
-    # 1. If RESEND_API_KEY is provided, use HTTPS API (Port 443 is never blocked on Render)
+    # 1. If RESEND_API_KEY is provided, use HTTPS API
     if resend_key:
         import requests
-        # In Resend Free Sandbox (onboarding@resend.dev), only verified account email is permitted
-        recipient = to_email if to_email.endswith("@gmail.com") else (cfg.get("MAIL_USERNAME") or "prudhvipanala41@gmail.com")
+        recipient = to_email
         resp = requests.post(
             "https://api.resend.com/emails",
             headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
