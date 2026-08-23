@@ -190,7 +190,11 @@ def submit_notes(appointment_id):
 
     appointment.doctor_notes = notes
     appointment.prescription_text = prescription
-    appointment.status = AppointmentStatus.COMPLETED
+    
+    if data.get("require_review"):
+        appointment.status = AppointmentStatus.PATIENT_REVIEW
+    else:
+        appointment.status = AppointmentStatus.COMPLETED
     db.session.commit()
     
     import threading

@@ -59,6 +59,15 @@ export default function PatientAppointments() {
     }
   }
 
+  async function acceptSummary(id) {
+    try {
+      await api.post(`/api/patient/appointments/${id}/accept_summary`);
+      await loadAppointments();
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
   const booked = appointments.filter((a) => a.status === "pending" || a.status === "confirmed").length;
   const completed = appointments.filter((a) => a.status === "completed").length;
   const cancelled = appointments.filter((a) => a.status === "cancelled" || a.status === "cancelled_by_leave" || a.status === "rejected").length;
@@ -265,23 +274,42 @@ export default function PatientAppointments() {
                       </div>
                     )}
                     
-                    {/* Diagnosis / Prescription (Completed) */}
-                    {appt.status === "completed" && (appt.diagnosis || appt.prescription) && (
-                      <div className="mt-6 pt-6 border-t border-slate-100 grid md:grid-cols-2 gap-6">
-                        {appt.diagnosis && (
-                          <div>
-                            <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
-                              <span className="text-emerald-500">⚕️</span> Diagnosis
-                            </h4>
-                            <p className="text-slate-800 bg-emerald-50 p-4 rounded-xl border border-emerald-100 font-medium">{appt.diagnosis}</p>
+                    {/* Diagnosis / Prescription (Completed or Review) */}
+                    {(appt.status === "completed" || appt.status === "patient_review") && (appt.diagnosis || appt.prescription || appt.postvisit_summary) && (
+                      <div className="mt-6 pt-6 border-t border-slate-100">
+                        {appt.status === "patient_review" && (
+                          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                            <h4 className="font-bold text-amber-900 mb-2">Doctor has sent the consultation summary for your review</h4>
+                            <p className="text-amber-800 text-sm mb-4">Please review the clinical notes, prescription, and AI-generated summary below. Once reviewed, click accept to formally complete the appointment.</p>
+                            <button onClick={() => acceptSummary(appt.id)} className="btn bg-emerald-600 text-white hover:bg-emerald-700 px-6 font-bold shadow-md">
+                              Accept Summary & Complete Appointment
+                            </button>
                           </div>
                         )}
-                        {appt.prescription && (
-                          <div>
+                        <div className="grid md:grid-cols-2 gap-6">
+                          {appt.diagnosis && (
+                            <div>
+                              <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                <span className="text-emerald-500">⚕️</span> Clinical Notes
+                              </h4>
+                              <p className="text-slate-800 bg-emerald-50 p-4 rounded-xl border border-emerald-100 font-medium whitespace-pre-line">{appt.diagnosis}</p>
+                            </div>
+                          )}
+                          {appt.prescription && (
+                            <div>
+                              <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                <span className="text-blue-500">💊</span> Prescription
+                              </h4>
+                              <p className="text-slate-800 bg-blue-50 p-4 rounded-xl border border-blue-100 font-medium whitespace-pre-line leading-relaxed">{appt.prescription}</p>
+                            </div>
+                          )}
+                        </div>
+                        {appt.postvisit_summary && (
+                          <div className="mt-6">
                             <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
-                              <span className="text-blue-500">💊</span> Prescription
+                              <span className="text-indigo-500">🤖</span> AI Post-Visit Summary
                             </h4>
-                            <p className="text-slate-800 bg-blue-50 p-4 rounded-xl border border-blue-100 font-medium whitespace-pre-line leading-relaxed">{appt.prescription}</p>
+                            <p className="text-slate-800 bg-indigo-50 p-4 rounded-xl border border-indigo-100 font-medium whitespace-pre-line leading-relaxed">{appt.postvisit_summary}</p>
                           </div>
                         )}
                       </div>

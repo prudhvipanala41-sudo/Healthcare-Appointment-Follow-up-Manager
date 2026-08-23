@@ -25,6 +25,7 @@ class AppointmentStatus(str, enum.Enum):
     COMPLETED = "completed"
     RESCHEDULED = "rescheduled"
     CANCELLED_BY_LEAVE = "cancelled_by_leave"
+    PATIENT_REVIEW = "patient_review"
 
 
 from sqlalchemy.types import TypeDecorator, String as SAString

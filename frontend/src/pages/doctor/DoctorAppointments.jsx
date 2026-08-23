@@ -72,11 +72,14 @@ export default function DoctorAppointments() {
     }
   }
 
-  async function handleCompleteSubmit(e) {
+  async function handleCompleteSubmit(e, requireReview = false) {
     e.preventDefault();
     try {
       setProcessingId(completeAppointmentId);
-      const res = await api.post(`/api/doctor/appointments/${completeAppointmentId}/notes`, consultationData);
+      const res = await api.post(`/api/doctor/appointments/${completeAppointmentId}/notes`, {
+        ...consultationData,
+        require_review: requireReview
+      });
       setAppointments(prev => prev.map(a => a.id === completeAppointmentId ? res.data : a));
       setIsCompleteModalOpen(false);
       setCompleteAppointmentId(null);
@@ -330,7 +333,7 @@ export default function DoctorAppointments() {
               <button onClick={() => setIsCompleteModalOpen(false)} className="text-emerald-400 hover:text-emerald-600 text-xl">&times;</button>
             </div>
             
-            <form onSubmit={handleCompleteSubmit} className="p-6 space-y-4">
+            <form className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1">Clinical Notes (Required)</label>
                 <textarea 
@@ -353,10 +356,10 @@ export default function DoctorAppointments() {
                 ></textarea>
                 <p className="text-xs text-slate-500 mt-1">We will automatically extract medication reminders from phrases like "twice daily for 5 days".</p>
               </div>
-              
               <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-slate-100">
                 <button type="button" onClick={() => setIsCompleteModalOpen(false)} className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg">Cancel</button>
-                <button type="submit" disabled={processingId !== null} className="btn-primary bg-emerald-600 hover:bg-emerald-700 px-6 disabled:opacity-50">Mark as Completed</button>
+                <button type="button" onClick={(e) => handleCompleteSubmit(e, true)} disabled={processingId !== null} className="btn-secondary text-blue-600 border-blue-200 hover:bg-blue-50 px-4 disabled:opacity-50">Send for Patient Review</button>
+                <button type="button" onClick={(e) => handleCompleteSubmit(e, false)} disabled={processingId !== null} className="btn-primary bg-emerald-600 hover:bg-emerald-700 px-6 disabled:opacity-50">Complete Directly</button>
               </div>
             </form>
           </div>
