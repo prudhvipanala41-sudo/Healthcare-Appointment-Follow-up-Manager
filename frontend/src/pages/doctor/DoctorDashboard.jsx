@@ -24,7 +24,8 @@ export default function DoctorDashboard() {
     }
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  const d = new Date();
+  const today = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split("T")[0];
   const todaysAppointments = appointments.filter(a => a.appointment_date === today);
   const pendingRequests = appointments.filter(a => a.status === "pending");
   const upcomingAppointments = appointments.filter(a => a.appointment_date >= today && a.status === "confirmed");

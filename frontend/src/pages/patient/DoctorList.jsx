@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import NavBar from "../../components/NavBar";
 import api, { errorMessage } from "../../api";
 import DoctorProfileModal from "./DoctorProfileModal";
@@ -27,6 +27,7 @@ const LOCATION_OPTIONS = [
 export default function DoctorList() {
   const [searchParams] = useSearchParams();
   const initSpecialty = searchParams.get("specialty") || "All";
+  const navigate = useNavigate();
 
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -280,6 +281,7 @@ export default function DoctorList() {
           onClose={() => setBookingDoctor(null)}
           onSuccess={() => {
             setBookingDoctor(null);
+            navigate("/patient");
           }}
         />
       )}
