@@ -228,8 +228,10 @@ export default function Login() {
                 <p>admin@clinic.com<br/>Admin@123</p>
               </div>
               <div className="bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
-                <p className="font-semibold text-blue-600 mb-1">Doctor</p>
-                <p>dr.asha@clinic.com<br/>Doctor@123</p>
+                <p className="font-semibold text-blue-600 mb-1">Doctors</p>
+                <p className="mb-1">dr.divya@clinic.com<br/>Doctor@123</p>
+                <p className="mb-1">dr.pooja@clinic.com<br/>Doctor@123</p>
+                <p>dr.tarun@clinic.com<br/>Doctor@123</p>
               </div>
               <div className="bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
                 <p className="font-semibold text-emerald-600 mb-1">Patient</p>
