@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import NavBar from "../../components/NavBar";
 import api, { errorMessage } from "../../api";
 import StatusBadge from "../../components/StatusBadge";
@@ -275,7 +275,7 @@ export default function PatientAppointments() {
                     )}
                     
                     {/* Diagnosis / Prescription (Completed or Review) */}
-                    {(appt.status === "completed" || appt.status === "patient_review") && (appt.diagnosis || appt.prescription || appt.postvisit_summary) && (
+                    {(appt.status === "completed" || appt.status === "patient_review") && (appt.doctor_notes || appt.prescription_text || appt.postvisit_summary) && (
                       <div className="mt-6 pt-6 border-t border-slate-100">
                         {appt.status === "patient_review" && (
                           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
@@ -287,20 +287,20 @@ export default function PatientAppointments() {
                           </div>
                         )}
                         <div className="grid md:grid-cols-2 gap-6">
-                          {appt.diagnosis && (
+                          {appt.doctor_notes && (
                             <div>
                               <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
                                 <span className="text-emerald-500">⚕️</span> Clinical Notes
                               </h4>
-                              <p className="text-slate-800 bg-emerald-50 p-4 rounded-xl border border-emerald-100 font-medium whitespace-pre-line">{appt.diagnosis}</p>
+                              <p className="text-slate-800 bg-emerald-50 p-4 rounded-xl border border-emerald-100 font-medium whitespace-pre-line">{appt.doctor_notes}</p>
                             </div>
                           )}
-                          {appt.prescription && (
+                          {appt.prescription_text && (
                             <div>
                               <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
                                 <span className="text-blue-500">💊</span> Prescription
                               </h4>
-                              <p className="text-slate-800 bg-blue-50 p-4 rounded-xl border border-blue-100 font-medium whitespace-pre-line leading-relaxed">{appt.prescription}</p>
+                              <p className="text-slate-800 bg-blue-50 p-4 rounded-xl border border-blue-100 font-medium whitespace-pre-line leading-relaxed">{appt.prescription_text}</p>
                             </div>
                           )}
                         </div>

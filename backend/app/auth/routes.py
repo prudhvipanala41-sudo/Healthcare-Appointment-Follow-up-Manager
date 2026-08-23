@@ -30,6 +30,17 @@ def register():
     db.session.add(user)
     db.session.commit()
 
+    # Send a welcome email!
+    from app.notifications.email_service import queue_and_send_email
+    queue_and_send_email(
+        user.email,
+        "Welcome to Sahayak Health!",
+        f"Hi {user.name},\n\nWelcome to Sahayak Health! Your account has been successfully created.\n\n"
+        "You can now log in, book appointments, and manage your health records effortlessly.\n\n"
+        "Best regards,\nThe Sahayak Health Team",
+        "welcome"
+    )
+
     token = create_access_token(identity=user.id, additional_claims={"role": user.role.value})
     return jsonify({"token": token, "user": user.to_dict()}), 201
 
