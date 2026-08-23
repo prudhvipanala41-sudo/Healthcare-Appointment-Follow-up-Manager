@@ -98,15 +98,15 @@ def create_app(config_object=Config):
             from app.doctors_data import DOCTORS_DATA
             from app.models import User, DoctorProfile, Role
             if DoctorProfile.query.count() < len(DOCTORS_DATA):
-                admin = User.query.filter_by(email="admin@clinic.com").first()
+                admin = User.query.filter_by(role=Role.ADMIN).first()
                 if not admin:
                     admin = User(name="Clinic Admin", email="admin@clinic.com", role=Role.ADMIN)
                     admin.set_password("Admin@123")
                     db.session.add(admin)
 
-                patient = User.query.filter_by(email="prudhvipanala41@gmail.com").first()
+                patient = User.query.filter_by(email="patient@demo.com").first()
                 if not patient:
-                    patient = User(name="Demo Patient", email="prudhvipanala41@gmail.com", role=Role.PATIENT)
+                    patient = User(name="Demo Patient", email="patient@demo.com", role=Role.PATIENT)
                     patient.set_password("Patient@123")
                     db.session.add(patient)
 

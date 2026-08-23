@@ -61,16 +61,12 @@ def run_seed(app):
             admin.set_password("Admin@123")
             db.session.add(admin)
 
-        # 2. Ensure Demo Patient exists with real email
-        patient = User.query.filter_by(email="prudhvipanala41@gmail.com").first()
+        # 2. Ensure Demo Patient exists
+        patient = User.query.filter_by(email="patient@demo.com").first()
         if not patient:
-            old_patient = User.query.filter_by(email="patient@demo.com").first()
-            if old_patient:
-                old_patient.email = "prudhvipanala41@gmail.com"
-            else:
-                patient = User(name="Demo Patient", email="prudhvipanala41@gmail.com", role=Role.PATIENT)
-                patient.set_password("Patient@123")
-                db.session.add(patient)
+            patient = User(name="Demo Patient", email="patient@demo.com", role=Role.PATIENT)
+            patient.set_password("Patient@123")
+            db.session.add(patient)
 
         # 3. Seed / update all 18 doctors
         for data in DOCTORS_DATA:
